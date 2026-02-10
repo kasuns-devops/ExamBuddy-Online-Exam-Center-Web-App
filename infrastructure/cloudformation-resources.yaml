@@ -21,7 +21,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: !Sub '${ProjectName}-users-${Environment}'
+      UserPoolName: 'USer pool - vv7alo'
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:

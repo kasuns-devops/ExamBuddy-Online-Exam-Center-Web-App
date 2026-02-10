@@ -27,9 +27,9 @@ This guide covers manual provisioning of AWS resources required for ExamBuddy. A
    - Add: `custom:role` (String, Mutable)
 
 **Save these values to `.env` files:**
-- User Pool ID: `COGNITO_USER_POOL_ID`
-- App Client ID: `COGNITO_CLIENT_ID`
-- Region: `COGNITO_REGION`
+- User Pool ID: `eu-north-1_KOieq5GAE`
+- App Client ID: `2k24r8nsjk6al9g9vjpb5fv1ul`
+- Region: `europe`
 
 ### CLI Alternative:
 

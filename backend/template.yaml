@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ExamBuddy Online Exam Platform - Serverless Backend
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    MemorySize: 1024
+    Environment:
+      Variables:
+        DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+        S3_PDFS_BUCKET: !Ref S3PdfsBucket
+        S3_EXPORTS_BUCKET: !Ref S3ExportsBucket
+        COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+        COGNITO_CLIENT_ID: !Ref CognitoClientId
+        JWT_SECRET: !Ref JWTSecret
+
+Parameters:
+  DynamoDBTableName:
+    Type: String
+    Default: exambuddy-main
+    Description: DynamoDB table name for storing all data
+  
+  S3PdfsBucket:
+    Type: String
+    Default: exambuddy-pdfs
+    Description: S3 bucket for PDF uploads
+  
+  S3ExportsBucket:
+    Type: String
+    Default: exambuddy-exports
+    Description: S3 bucket for result exports
+  
+  CognitoUserPoolId:
+    Type: String
+    Description: Cognito User Pool ID
+  
+  CognitoClientId:
+    Type: String
+    Description: Cognito App Client ID
+  
+  JWTSecret:
+    Type: String
+    NoEcho: true
+    Description: Secret key for JWT token signing
+
+Resources:
+  # API Gateway
+  ExamBuddyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}'
+
+  # Main Lambda Function (FastAPI with Mangum)
+  ExamBuddyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src.main.handler
+      CodeUri: .
+      Events:
+        ApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExamBuddyApi
+            Path: /
+            Method: ANY
+        ApiProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExamBuddyApi
+            Path: /{proxy+}
+            Method: ANY
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTableName
+        - S3CrudPolicy:
+            BucketName: !Ref S3PdfsBucket
+        - S3CrudPolicy:
+            BucketName: !Ref S3ExportsBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminGetUser
+                - cognito-idp:AdminInitiateAuth
+              Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}'
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ExamBuddyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  
+  FunctionArn:
+    Description: "ExamBuddy Function ARN"
+    Value: !GetAtt ExamBuddyFunction.Arn
