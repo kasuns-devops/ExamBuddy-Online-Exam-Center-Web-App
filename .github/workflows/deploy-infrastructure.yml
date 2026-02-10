@@ -1,0 +1,215 @@
+name: Deploy AWS Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+      - setup-aws-infrastructure
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/deploy-infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: eu-north-1
+  STACK_NAME: exambuddy-resources-dev
+
+jobs:
+  validate:
+    name: Validate CloudFormation Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate CloudFormation template
+        run: |
+          aws cloudformation validate-template \
+            --template-body file://infrastructure/cloudformation-resources.yaml
+
+      - name: Check template formatting
+        run: |
+          if ! command -v cfn-lint &> /dev/null; then
+            echo "⚠️  cfn-lint not installed, skipping linting"
+          else
+            cfn-lint infrastructure/cloudformation-resources.yaml
+          fi
+
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      user-pool-id: ${{ steps.get-outputs.outputs.user-pool-id }}
+      client-id: ${{ steps.get-outputs.outputs.client-id }}
+      table-name: ${{ steps.get-outputs.outputs.table-name }}
+      pdfs-bucket: ${{ steps.get-outputs.outputs.pdfs-bucket }}
+      exports-bucket: ${{ steps.get-outputs.outputs.exports-bucket }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check if stack exists
+        id: check-stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy CloudFormation stack
+        id: deploy
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          
+          if [ "${{ steps.check-stack.outputs.exists }}" == "true" ]; then
+            echo "📦 Updating existing stack..."
+            aws cloudformation update-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --template-body file://infrastructure/cloudformation-resources.yaml \
+              --parameters \
+                ParameterKey=ProjectName,ParameterValue=exambuddy \
+                ParameterKey=Environment,ParameterValue=$ENVIRONMENT \
+              --capabilities CAPABILITY_IAM || {
+                # Check if no updates are needed
+                if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text | grep -q "UPDATE_COMPLETE\|CREATE_COMPLETE"; then
+                  echo "ℹ️  No updates needed, stack is already up to date"
+                  exit 0
+                else
+                  exit 1
+                fi
+              }
+          else
+            echo "🚀 Creating new stack..."
+            aws cloudformation create-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --template-body file://infrastructure/cloudformation-resources.yaml \
+              --parameters \
+                ParameterKey=ProjectName,ParameterValue=exambuddy \
+                ParameterKey=Environment,ParameterValue=$ENVIRONMENT \
+              --capabilities CAPABILITY_IAM
+          fi
+
+      - name: Wait for stack completion
+        run: |
+          echo "⏳ Waiting for stack operation to complete..."
+          aws cloudformation wait stack-create-complete \
+            --stack-name ${{ env.STACK_NAME }} 2>/dev/null || \
+          aws cloudformation wait stack-update-complete \
+            --stack-name ${{ env.STACK_NAME }} 2>/dev/null || true
+
+      - name: Get stack outputs
+        id: get-outputs
+        run: |
+          echo "📋 Retrieving stack outputs..."
+          
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
+            --output text)
+          
+          CLIENT_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`UserPoolClientId`].OutputValue' \
+            --output text)
+          
+          TABLE_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DynamoDBTableName`].OutputValue' \
+            --output text)
+          
+          PDFS_BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`PdfsBucketName`].OutputValue' \
+            --output text)
+          
+          EXPORTS_BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ExportsBucketName`].OutputValue' \
+            --output text)
+          
+          echo "user-pool-id=$USER_POOL_ID" >> $GITHUB_OUTPUT
+          echo "client-id=$CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "table-name=$TABLE_NAME" >> $GITHUB_OUTPUT
+          echo "pdfs-bucket=$PDFS_BUCKET" >> $GITHUB_OUTPUT
+          echo "exports-bucket=$EXPORTS_BUCKET" >> $GITHUB_OUTPUT
+
+      - name: Display configuration
+        run: |
+          echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Resource Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Add these values to your \`.env\` files:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Backend .env" >> $GITHUB_STEP_SUMMARY
+          echo "COGNITO_USER_POOL_ID=${{ steps.get-outputs.outputs.user-pool-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "COGNITO_CLIENT_ID=${{ steps.get-outputs.outputs.client-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "COGNITO_REGION=${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "DYNAMODB_TABLE_NAME=${{ steps.get-outputs.outputs.table-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "S3_PDFS_BUCKET=${{ steps.get-outputs.outputs.pdfs-bucket }}" >> $GITHUB_STEP_SUMMARY
+          echo "S3_EXPORTS_BUCKET=${{ steps.get-outputs.outputs.exports-bucket }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Frontend .env" >> $GITHUB_STEP_SUMMARY
+          echo "VITE_COGNITO_USER_POOL_ID=${{ steps.get-outputs.outputs.user-pool-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "VITE_COGNITO_CLIENT_ID=${{ steps.get-outputs.outputs.client-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "VITE_COGNITO_REGION=${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  rollback-on-failure:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check stack status
+        run: |
+          STATUS=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].StackStatus' \
+            --output text)
+          
+          echo "Stack status: $STATUS"
+          
+          if [[ "$STATUS" == *"ROLLBACK"* ]] || [[ "$STATUS" == *"FAILED"* ]]; then
+            echo "⚠️  Stack deployment failed, check CloudFormation console for details"
+            echo "Stack events:"
+            aws cloudformation describe-stack-events \
+              --stack-name ${{ env.STACK_NAME }} \
+              --max-items 10
+          fi
