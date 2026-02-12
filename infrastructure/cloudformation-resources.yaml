@@ -171,8 +171,6 @@ Resources:
               - http://localhost:3000
               - http://localhost:5173
               - https://*.exambuddy.com
-            ExposeHeaders:
-              - ETag
             MaxAge: 3000
       Tags:
         - Key: Project
