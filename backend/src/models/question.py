@@ -15,6 +15,17 @@ class DifficultyLevel(str, Enum):
     EXPERT = "expert"
 
 
+class QuestionType(str, Enum):
+    """Question type categories"""
+    MULTIPLE_CHOICE = "multiple_choice"
+    MULTIPLE_RESPONSE = "multiple_response"
+    DROP_DOWN_SELECTION = "drop_down_selection"
+    BUILD_LIST = "build_list"
+    DRAG_AND_DROP = "drag_and_drop"
+    HOT_AREA = "hot_area"
+    SCENARIO_SERIES = "scenario_series"
+
+
 class Question(BaseModel):
     """Question entity model"""
     question_id: str = Field(..., description="Unique question identifier (UUID)")
