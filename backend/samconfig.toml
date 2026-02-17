@@ -1,0 +1,20 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "exambuddy-staging"
+resolve_s3 = true
+s3_prefix = "exambuddy-staging"
+region = "eu-north-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "DynamoDBTableName=\"exambuddy-main\" S3PdfsBucket=\"exambuddy-pdfs\" S3ExportsBucket=\"exambuddy-exports\""
+image_repositories = []
+
+[default.build]
+[default.build.parameters]
+use_container = true
+
+[default.global.parameters]
+region = "eu-north-1"

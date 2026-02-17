@@ -1,0 +1,134 @@
+name: Deploy ExamBuddy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-north-1
+  DOCKER_IMAGE: exambuddy-deploy:latest
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Backend
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run PDF extraction tests
+        working-directory: backend/tests
+        run: |
+          python test_pdf_extraction.py
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    name: Build Frontend
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
+      
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to AWS Staging
+    needs: [test, build-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install SAM CLI
+        run: |
+          pip install aws-sam-cli boto3 awscli
+      
+      - name: Build SAM application
+        working-directory: backend
+        run: |
+          sam build --use-container
+      
+      - name: Deploy SAM application
+        working-directory: backend
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --stack-name exambuddy-staging \
+            --s3-prefix exambuddy-staging \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --region eu-north-1 \
+            --parameter-overrides \
+              DynamoDBTableName=exambuddy-main \
+              S3PdfsBucket=exambuddy-pdfs \
+              S3ExportsBucket=exambuddy-exports \
+              CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
+              CognitoClientId=${{ secrets.COGNITO_CLIENT_ID }} \
+              JWTSecret=${{ secrets.JWT_SECRET }}
+      
+      - name: Get API URL
+        working-directory: backend
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name exambuddy-staging \
+            --query 'Stacks[0].Outputs[?OutputKey==`ExamBuddyApiEndpoint`].OutputValue' \
+            --output text \
+            --region eu-north-1)
+          echo "✅ API Endpoint: $API_URL"
+          echo "API_URL=$API_URL" >> $GITHUB_ENV
+      
+      - name: Update Frontend Config
+        if: success()
+        run: |
+          echo "API URL is: ${{ env.API_URL }}"
+          echo "Update frontend/src/config.js with this API URL"
+      
+      - name: Create Deployment Summary
+        if: always()
+        run: |
+          echo "## 📦 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Stack Name**: exambuddy-staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: eu-north-1" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Endpoint**: ${{ env.API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
