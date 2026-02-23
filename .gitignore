@@ -76,3 +76,10 @@ samconfig.toml
 *.tmp
 .cache/
 .parcel-cache/
+# Local Development Files
+docker-build.log
+sample_questions.pdf
+.specify/
+
+# Archived Documentation
+ARCHIVE/
