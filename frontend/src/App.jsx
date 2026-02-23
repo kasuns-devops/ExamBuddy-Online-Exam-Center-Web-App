@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,29 +13,12 @@ import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isInitialized } = useAuth();
+  const isAuthenticated = useAuth((state) => state.isAuthenticated);
 
-  if (!isInitialized) {
-    return <div className="loading-container">Loading...</div>;
-  }
-
-  return isAuthenticated() ? children : <Navigate to="/login" />;
+  return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-function AppContent() {
-  const { initializeAuth } = useAuth();
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    // Initialize auth from localStorage on app mount
-    initializeAuth();
-    setInitialized(true);
-  }, [initializeAuth]);
-
-  if (!initialized) {
-    return <div className="loading-container">Initializing...</div>;
-  }
-
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -54,9 +37,16 @@ function AppContent() {
 }
 
 function App() {
+  const initializeAuth = useAuth((state) => state.initializeAuth);
+
+  useEffect(() => {
+    // Initialize auth from localStorage on app mount
+    initializeAuth();
+  }, [initializeAuth]);
+
   return (
     <Router>
-      <AppContent />
+      <AppRoutes />
     </Router>
   );
 }

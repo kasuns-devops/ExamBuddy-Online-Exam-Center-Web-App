@@ -52,36 +52,6 @@ export const useAuth = create(
         set({ refreshToken: token });
       },
 
-      // Respond to NEW_PASSWORD_REQUIRED challenge
-      respondToNewPasswordChallenge: async (email, newPassword) => {
-        set({ isLoading: true, error: null });
-        try {
-          const session = get().pwdChangeSession;
-          if (!session) throw new Error('No active password change session');
-
-          const result = await cognitoService.respondToNewPasswordChallenge(email, newPassword, session);
-
-          set({
-            user: { email },
-            idToken: result.idToken,
-            accessToken: result.accessToken,
-            isAuthenticated: true,
-            requiresNewPassword: false,
-            pwdChangeSession: null,
-            isLoading: false,
-            error: null,
-          });
-
-          return { success: true };
-        } catch (error) {
-          set({
-            error: error.message || 'Password update failed',
-            isLoading: false,
-          });
-          return { success: false, error: error.message };
-        }
-      },
-
       // Logout
       logout: () => {
         cognitoService.logout();
