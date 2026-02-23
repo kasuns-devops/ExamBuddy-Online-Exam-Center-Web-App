@@ -18,7 +18,14 @@ const api = axios.create({
 // Request interceptor - Attach JWT token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    // Try to get Cognito ID token
+    let token = localStorage.getItem('cognito_id_token');
+    
+    // Fallback to auth_token if Cognito token not available
+    if (!token) {
+      token = localStorage.getItem('auth_token');
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
