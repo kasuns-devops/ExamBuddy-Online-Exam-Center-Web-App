@@ -1,0 +1,2 @@
+CLIENT_SECRET=78u3uccutb9psacnto94eicuerlln90iamnrhbh6u5lnesk186q
+SECRET_HASH=HjIwwzMFSYRVlqsQAtbn1jiyfbuxhQ3K7ZZUSIh5DhQ=
