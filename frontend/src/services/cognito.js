@@ -8,13 +8,21 @@ const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
 const region = import.meta.env.VITE_COGNITO_REGION || 'eu-north-1';
 
 // Hosted UI domain
-const cognitoDomain = `exambuddy-auth.auth.${region}.amazoncognito.com`;
-const redirectUri = `${window.location.origin}/auth-callback`;
+const cognitoDomain =
+  import.meta.env.VITE_COGNITO_DOMAIN ||
+  `exambuddy-auth.auth.${region}.amazoncognito.com`;
+const redirectUri =
+  import.meta.env.VITE_COGNITO_REDIRECT_URI ||
+  `${window.location.origin}/auth-callback`;
 
 /**
  * Redirect to Cognito Hosted UI for login
  */
 export const loginWithHostedUI = () => {
+  if (!clientId || !redirectUri || !cognitoDomain) {
+    throw new Error('Cognito configuration missing (clientId, redirectUri, or domain)');
+  }
+
   // Generate random state for CSRF protection
   const state = Math.random().toString(36).substring(2, 15) + 
                 Math.random().toString(36).substring(2, 15);
@@ -30,7 +38,10 @@ export const loginWithHostedUI = () => {
     state: state,
   });
 
-  window.location.href = `https://${cognitoDomain}/oauth2/authorize?${params.toString()}`;
+  const authUrl = `https://${cognitoDomain}/login?${params.toString()}`;
+  console.log('Cognito authorize URL:', authUrl);
+  sessionStorage.setItem('oauth_authorize_url', authUrl);
+  window.location.assign(authUrl);
 };
 
 /**
