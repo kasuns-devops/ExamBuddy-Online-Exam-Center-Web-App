@@ -1,0 +1,20 @@
+# ExamBuddy Backend - Minimal Production Requirements
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+mangum==0.17.0
+
+# AWS SDK
+boto3==1.29.7
+botocore==1.32.7
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# Data Validation & Parsing
+pydantic==2.5.2
+pydantic-settings==2.1.0
+email-validator==2.1.0
