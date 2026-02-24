@@ -16,6 +16,7 @@ export const AuthCallback = () => {
       try {
         // Get the authorization code from URL parameters
         const code = searchParams.get('code');
+        const state = searchParams.get('state');
         const error = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
 
@@ -32,6 +33,22 @@ export const AuthCallback = () => {
           setMessage('No authorization code received from Cognito');
           return;
         }
+
+        // Validate OAuth state (CSRF protection)
+        const expectedState = sessionStorage.getItem('oauth_state');
+        if (!state || !expectedState || state !== expectedState) {
+          setStatus('error');
+          setMessage('Invalid OAuth state. Please try logging in again.');
+          return;
+        }
+
+        // Prevent duplicate code exchange (React StrictMode / remounts)
+        const exchangeKey = `oauth_code_exchange_${code}`;
+        const existingStatus = sessionStorage.getItem(exchangeKey);
+        if (existingStatus === 'pending' || existingStatus === 'done') {
+          return;
+        }
+        sessionStorage.setItem(exchangeKey, 'pending');
 
         // Exchange the auth code for tokens
         setMessage('Exchanging authorization code for tokens...');
@@ -55,15 +72,23 @@ export const AuthCallback = () => {
           setStatus('success');
           setMessage('Login successful! Redirecting...');
 
+          sessionStorage.setItem(exchangeKey, 'done');
+          sessionStorage.removeItem('oauth_state');
+
           // Redirect to dashboard after a short delay
           setTimeout(() => {
             navigate('/');
           }, 1500);
         } else {
+          sessionStorage.removeItem(exchangeKey);
           setStatus('error');
           setMessage('Failed to obtain tokens from Cognito');
         }
       } catch (error) {
+        const code = searchParams.get('code');
+        if (code) {
+          sessionStorage.removeItem(`oauth_code_exchange_${code}`);
+        }
         console.error('Auth callback error:', error);
         setStatus('error');
         setMessage(`Error: ${error.message || 'Authentication failed'}`);
