@@ -52,6 +52,11 @@ export const useAuth = create(
         set({ refreshToken: token });
       },
 
+      // Set authenticated flag
+      setAuthenticated: (value) => {
+        set({ isAuthenticated: value });
+      },
+
       // Logout
       logout: () => {
         cognitoService.logout();
@@ -96,8 +101,8 @@ export const useAuth = create(
         }
       },
 
-      // Check if user is authenticated
-      isAuthenticated: () => {
+      // Check if user has a valid local token
+      hasValidLocalSession: () => {
         return cognitoService.isAuthenticated();
       },
 

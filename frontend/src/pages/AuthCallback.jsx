@@ -7,7 +7,7 @@ import './AuthCallback.css';
 export const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setIdToken, setAccessToken, setRefreshToken } = useAuth();
+  const { setIdToken, setAccessToken, setRefreshToken, setAuthenticated } = useAuth();
   const [status, setStatus] = useState('processing'); // processing, success, error
   const [message, setMessage] = useState('Processing your login...');
 
@@ -68,6 +68,7 @@ export const AuthCallback = () => {
           if (tokens.refreshToken) {
             setRefreshToken(tokens.refreshToken);
           }
+          setAuthenticated(true);
 
           setStatus('success');
           setMessage('Login successful! Redirecting...');
@@ -96,7 +97,7 @@ export const AuthCallback = () => {
     };
 
     handleCallback();
-  }, [searchParams, navigate, setIdToken, setAccessToken, setRefreshToken]);
+  }, [searchParams, navigate, setIdToken, setAccessToken, setRefreshToken, setAuthenticated]);
 
   return (
     <div className="auth-callback-container">
