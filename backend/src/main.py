@@ -3,7 +3,8 @@ ExamBuddy Backend - FastAPI Application Entry Point
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+import json
 from mangum import Mangum
 from src.config import settings
 from src.middleware.error_handler import register_error_handlers
@@ -41,11 +42,18 @@ register_error_handlers(app)
 @app.get("/")
 async def root():
     """Root endpoint - API health check"""
-    return {
-        "message": "ExamBuddy API",
-        "version": settings.app_version,
-        "status": "healthy"
-    }
+    return JSONResponse(
+        content={
+            "message": "ExamBuddy API",
+            "version": settings.app_version,
+            "status": "healthy"
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
 
 
 @app.options("/")
@@ -64,11 +72,18 @@ async def root_options():
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring"""
-    return {
-        "status": "healthy",
-        "app": settings.app_name,
-        "version": settings.app_version
-    }
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "app": settings.app_name,
+            "version": settings.app_version
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
 
 
 # Catch-all OPTIONS for any path (CORS preflight)
