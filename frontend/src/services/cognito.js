@@ -14,6 +14,9 @@ const cognitoDomain =
 const redirectUri =
   import.meta.env.VITE_COGNITO_REDIRECT_URI ||
   `${window.location.origin}/auth-callback`;
+const logoutRedirectUri =
+  import.meta.env.VITE_COGNITO_LOGOUT_URI ||
+  `${window.location.origin}/login`;
 
 /**
  * Redirect to Cognito Hosted UI for login
@@ -107,10 +110,16 @@ export const logout = () => {
   localStorage.removeItem('cognito_id_token');
   localStorage.removeItem('cognito_refresh_token');
   localStorage.removeItem('user_email');
+  sessionStorage.removeItem('oauth_state');
 
-  // Redirect to Cognito logout
-  const logoutUri = `${window.location.origin}/`;
-  window.location.href = `https://${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  const params = new URLSearchParams({
+    client_id: clientId,
+    logout_uri: logoutRedirectUri,
+  });
+
+  const logoutUrl = `https://${cognitoDomain}/logout?${params.toString()}`;
+  console.log('Cognito logout URL:', logoutUrl);
+  window.location.assign(logoutUrl);
 };
 
 /**
