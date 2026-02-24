@@ -108,20 +108,26 @@ else:
     # Fallback raw handler if FastAPI/Mangum not available
     def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         """Raw Lambda handler - returns CORS responses without FastAPI"""
-        method = event.get('requestContext', {}).get('http', {}).get('method', 'GET')
-        path = event.get('rawPath', '/')
+        method = (
+            event.get('requestContext', {}).get('http', {}).get('method')
+            or event.get('httpMethod')
+            or 'GET'
+        )
+        path = event.get('rawPath') or event.get('path') or '/'
+
+        cors_headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+            'Access-Control-Max-Age': '3600',
+            'Content-Type': 'application/json',
+        }
         
         # Handle OPTIONS (preflight)
         if method == 'OPTIONS':
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                    'Access-Control-Max-Age': '3600',
-                    'Content-Type': 'application/json'
-                },
+                'headers': cors_headers,
                 'body': ''
             }
         
@@ -129,10 +135,7 @@ else:
         if method == 'GET' and path == '/':
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
+                'headers': cors_headers,
                 'body': '{"message":"ExamBuddy API","version":"0.1.0","status":"healthy"}'
             }
         
@@ -140,19 +143,13 @@ else:
         if method == 'GET' and path == '/health':
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
+                'headers': cors_headers,
                 'body': '{"status":"healthy","app":"ExamBuddy API","version":"0.1.0"}'
             }
         
         # Not found
         return {
             'statusCode': 404,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
+            'headers': cors_headers,
             'body': '{"detail":"Not Found"}'
         }
