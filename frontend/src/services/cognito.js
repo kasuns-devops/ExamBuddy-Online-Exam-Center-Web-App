@@ -15,11 +15,19 @@ const redirectUri = `${window.location.origin}/auth-callback`;
  * Redirect to Cognito Hosted UI for login
  */
 export const loginWithHostedUI = () => {
+  // Generate random state for CSRF protection
+  const state = Math.random().toString(36).substring(2, 15) + 
+                Math.random().toString(36).substring(2, 15);
+  
+  // Store state in sessionStorage for validation on callback
+  sessionStorage.setItem('oauth_state', state);
+  
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
     scope: 'email openid profile',
+    state: state,
   });
 
   window.location.href = `https://${cognitoDomain}/oauth2/authorize?${params.toString()}`;
