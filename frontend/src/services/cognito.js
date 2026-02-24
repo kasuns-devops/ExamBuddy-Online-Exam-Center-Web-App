@@ -7,8 +7,8 @@ const userPoolId = import.meta.env.VITE_COGNITO_USER_POOL_ID;
 const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
 const region = import.meta.env.VITE_COGNITO_REGION || 'eu-north-1';
 
-// Hosted UI domain (you'll need to set this up in Cognito)
-const cognitoDomain = `exambuddy.auth.${region}.amazoncognito.com`;
+// Hosted UI domain
+const cognitoDomain = `exambuddy-auth.auth.${region}.amazoncognito.com`;
 const redirectUri = `${window.location.origin}/auth-callback`;
 
 /**

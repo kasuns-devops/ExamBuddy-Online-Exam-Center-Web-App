@@ -3,6 +3,7 @@ ExamBuddy Backend - FastAPI Application Entry Point
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from mangum import Mangum
 from src.config import settings
 from src.middleware.error_handler import register_error_handlers
@@ -19,7 +20,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.api_cors_origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +48,19 @@ async def root():
     }
 
 
+@app.options("/")
+async def root_options():
+    """OPTIONS endpoint for CORS preflight"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring"""
@@ -55,6 +69,20 @@ async def health_check():
         "app": settings.app_name,
         "version": settings.app_version
     }
+
+
+# Catch-all OPTIONS for any path (CORS preflight)
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle CORS preflight for all paths"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        }
+    )
 
 
 # Lambda handler using Mangum

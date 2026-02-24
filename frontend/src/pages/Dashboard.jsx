@@ -14,14 +14,22 @@ export const Dashboard = () => {
   useEffect(() => {
     const checkAPI = async () => {
       try {
+        console.log('Attempting API call to:', api.defaults.baseURL);
         const response = await api.get('');
+        console.log('API response:', response.data);
         setApiStatus('success');
         setApiMessage(`API Status: ${response.data.status}`);
         setUserInfo(response.data);
       } catch (error) {
+        console.error('API Error Details:', {
+          message: error.message,
+          code: error.code,
+          url: error.config?.url,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
         setApiStatus('error');
         setApiMessage(`API Error: ${error.message}`);
-        console.error('API check failed:', error);
       }
     };
 
