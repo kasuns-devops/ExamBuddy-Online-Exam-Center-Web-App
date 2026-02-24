@@ -2,9 +2,7 @@
 ExamBuddy Backend - FastAPI Application Entry Point
 """
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
-import json
+from fastapi.responses import JSONResponse
 from mangum import Mangum
 from src.config import settings
 from src.middleware.error_handler import register_error_handlers
@@ -18,10 +16,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add middleware to ensure CORS headers are always present
+# Custom middleware to add CORS headers - MUST be first
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
-    """Add CORS headers to all responses"""
+    """Add CORS headers to all responses - handles both preflight and actual requests"""
+    # Handle OPTIONS (preflight) requests
     if request.method == "OPTIONS":
         return JSONResponse(
             content={},
@@ -30,23 +29,25 @@ async def add_cors_headers(request: Request, call_next):
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Max-Age": "3600",
             }
         )
     
-    response = await call_next(request)
+    # Process actual request
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        # Even error responses need CORS headers
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": str(e)},
+        )
+    
+    # Add CORS headers to response
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     return response
-
-# Configure CORS middleware (as fallback)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Register error handlers
 register_error_handlers(app)
