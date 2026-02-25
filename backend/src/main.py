@@ -116,7 +116,105 @@ else:
             "text": "What is 2 + 2?",
             "answer_options": ["3", "4", "5", "6"],
             "correct_answer_index": 1,
-            "project_id": "default"
+            "project_id": "default",
+            "difficulty": "easy",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-2",
+            "text": "Which planet is known as the Red Planet?",
+            "answer_options": ["Earth", "Mars", "Venus", "Jupiter"],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "easy",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-3",
+            "text": "Which data structure uses LIFO order?",
+            "answer_options": ["Queue", "Stack", "Heap", "Graph"],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "medium",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-4",
+            "text": "What does HTTP stand for?",
+            "answer_options": [
+                "HyperText Transfer Protocol",
+                "HighText Transfer Process",
+                "Hyper Transfer Text Program",
+                "Home Tool Transfer Protocol"
+            ],
+            "correct_answer_index": 0,
+            "project_id": "default",
+            "difficulty": "easy",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-5",
+            "text": "In SQL, which clause is used to filter grouped records?",
+            "answer_options": ["WHERE", "HAVING", "ORDER BY", "DISTINCT"],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "medium",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-6",
+            "text": "Which AWS service is object storage?",
+            "answer_options": ["EC2", "RDS", "S3", "Lambda"],
+            "correct_answer_index": 2,
+            "project_id": "default",
+            "difficulty": "easy",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-7",
+            "text": "Which algorithm typically has O(log n) search time on sorted data?",
+            "answer_options": ["Linear Search", "Binary Search", "Bubble Sort", "DFS"],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "medium",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-8",
+            "text": "What is the primary purpose of JWT in web applications?",
+            "answer_options": [
+                "Image compression",
+                "Session/token-based authentication",
+                "Database indexing",
+                "HTML templating"
+            ],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "medium",
+            "question_type": "single_choice"
+        },
+        {
+            "question_id": "q-sample-9",
+            "text": "Which CAP theorem trade-off is common in globally distributed NoSQL systems?",
+            "answer_options": ["CP only", "CA only", "AP tendency", "None"],
+            "correct_answer_index": 2,
+            "project_id": "default",
+            "difficulty": "hard",
+            "question_type": "scenario"
+        },
+        {
+            "question_id": "q-sample-10",
+            "text": "You need to deploy a serverless REST API with minimum ops overhead. Best fit?",
+            "answer_options": [
+                "EC2 + Nginx",
+                "Lambda + API Gateway",
+                "ECS on EC2",
+                "Bare metal VM"
+            ],
+            "correct_answer_index": 1,
+            "project_id": "default",
+            "difficulty": "hard",
+            "question_type": "scenario"
         }
     ]
     FALLBACK_EXAM_SESSIONS: Dict[str, Dict[str, Any]] = {}

@@ -165,6 +165,17 @@ const ExamPage = () => {
     setPhase('selection');
   };
 
+  if (phase === 'selection') {
+    return (
+      <div className="exam-page">
+        <div className="exam-container">
+          <ProjectSelection onSelectProject={handleProjectSelect} />
+          {error && <div className="error-message">{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'config') {
     return (
       <div className="exam-page">
@@ -206,10 +217,10 @@ const ExamPage = () => {
               <label>Number of Questions</label>
               <input
                 type="number"
-                min="5"
+                min="1"
                 max="50"
                 value={questionCount}
-                onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+                onChange={(e) => setQuestionCount(parseInt(e.target.value) || 1)}
               />
               <small className="help-text">
                 Available: {selectedProject?.questionCount || 0} questions

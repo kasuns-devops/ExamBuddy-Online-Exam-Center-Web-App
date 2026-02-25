@@ -19,11 +19,11 @@ const ProjectSelection = ({ onSelectProject }) => {
       setProjects([
         {
           id: 'demo-project-id',
-          name: 'General Knowledge Quiz',
-          description: 'Test your knowledge across various topics',
+          name: 'ExamBuddy Sample Question Bank',
+          description: 'Mixed sample set (easy/medium/hard, core conceptual + scenario style)',
           questionCount: 10,
           difficulty: 'Mixed',
-          topics: ['Geography', 'Math', 'Science', 'Literature']
+          topics: ['General Knowledge', 'Programming', 'SQL', 'AWS', 'Security']
         }
       ]);
       setLoading(false);
