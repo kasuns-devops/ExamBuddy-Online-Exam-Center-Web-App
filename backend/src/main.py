@@ -2,6 +2,10 @@
 ExamBuddy Backend - FastAPI Application Entry Point
 """
 import sys
+import json
+import uuid
+import base64
+import time
 from typing import Any, Dict
 
 # Try to import FastAPI/Mangum - if they fail, use fallback handler
@@ -105,6 +109,57 @@ if FASTAPI_AVAILABLE:
     handler = Mangum(app, lifespan="off")
 
 else:
+    FALLBACK_QUESTIONS = [
+        {
+            "question_id": "q-sample-1",
+            "text": "What is 2 + 2?",
+            "answer_options": ["3", "4", "5", "6"],
+            "correct_answer_index": 1,
+            "project_id": "default"
+        }
+    ]
+
+    def _get_header(headers: Dict[str, Any], key: str) -> str:
+        if not headers:
+            return ""
+        return headers.get(key) or headers.get(key.lower()) or headers.get(key.title()) or ""
+
+    def _is_authorized(headers: Dict[str, Any]) -> bool:
+        auth_header = _get_header(headers, 'Authorization')
+        if not auth_header.startswith('Bearer '):
+            return False
+
+        token = auth_header.split(' ', 1)[1].strip()
+        parts = token.split('.')
+        if len(parts) != 3:
+            return False
+
+        try:
+            payload_b64 = parts[1] + '=' * (-len(parts[1]) % 4)
+            payload_raw = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
+            payload = json.loads(payload_raw)
+
+            exp = payload.get('exp')
+            token_use = payload.get('token_use')
+
+            if exp and int(exp) < int(time.time()):
+                return False
+            if token_use and token_use not in ('id', 'access'):
+                return False
+            return True
+        except Exception:
+            return False
+
+    def _parse_json_body(event: Dict[str, Any]) -> Dict[str, Any]:
+        body = event.get('body')
+        if not body:
+            return {}
+        if event.get('isBase64Encoded'):
+            body = base64.b64decode(body).decode('utf-8')
+        if isinstance(body, dict):
+            return body
+        return json.loads(body)
+
     # Fallback raw handler if FastAPI/Mangum not available
     def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         """Raw Lambda handler - returns CORS responses without FastAPI"""
@@ -114,6 +169,8 @@ else:
             or 'GET'
         )
         path = event.get('rawPath') or event.get('path') or '/'
+        headers = event.get('headers') or {}
+        query = event.get('queryStringParameters') or {}
 
         cors_headers = {
             'Access-Control-Allow-Origin': '*',
@@ -145,6 +202,78 @@ else:
                 'statusCode': 200,
                 'headers': cors_headers,
                 'body': '{"status":"healthy","app":"ExamBuddy API","version":"0.1.0"}'
+            }
+
+        # Protected: GET /api/questions
+        if method == 'GET' and path == '/api/questions':
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            project_id = query.get('project_id')
+            items = FALLBACK_QUESTIONS
+            if project_id:
+                items = [item for item in FALLBACK_QUESTIONS if item.get('project_id') == project_id]
+
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'items': items, 'count': len(items)})
+            }
+
+        # Protected: POST /api/questions
+        if method == 'POST' and path == '/api/questions':
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            try:
+                payload = _parse_json_body(event)
+            except Exception:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid JSON body'})
+                }
+
+            text = (payload.get('text') or '').strip()
+            answer_options = payload.get('answer_options') or []
+            correct_answer_index = payload.get('correct_answer_index', 0)
+            project_id = payload.get('project_id', 'default')
+
+            if not text or not isinstance(answer_options, list) or len(answer_options) < 2:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'text and at least 2 answer_options are required'})
+                }
+
+            if not isinstance(correct_answer_index, int) or correct_answer_index < 0 or correct_answer_index >= len(answer_options):
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'correct_answer_index is out of range'})
+                }
+
+            question = {
+                'question_id': f"q-{uuid.uuid4().hex[:8]}",
+                'text': text,
+                'answer_options': answer_options,
+                'correct_answer_index': correct_answer_index,
+                'project_id': project_id,
+            }
+            FALLBACK_QUESTIONS.append(question)
+
+            return {
+                'statusCode': 201,
+                'headers': cors_headers,
+                'body': json.dumps(question)
             }
         
         # Not found

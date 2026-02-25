@@ -8,18 +8,18 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { logout, getIdToken } = useAuth();
   const [apiStatus, setApiStatus] = useState('checking');
-  const [apiMessage, setApiMessage] = useState('Checking API connection...');
-  const [userInfo, setUserInfo] = useState(null);
+  const [apiMessage, setApiMessage] = useState('Loading questions...');
+  const [questions, setQuestions] = useState([]);
 
   useEffect(() => {
     const checkAPI = async () => {
       try {
         console.log('Attempting API call to:', api.defaults.baseURL);
-        const response = await api.get('');
+        const response = await api.get('/api/questions');
         console.log('API response:', response.data);
         setApiStatus('success');
-        setApiMessage(`API Status: ${response.data.status}`);
-        setUserInfo(response.data);
+        setApiMessage(`Questions loaded: ${response.data.count}`);
+        setQuestions(response.data.items || []);
       } catch (error) {
         console.error('API Error Details:', {
           message: error.message,
@@ -71,14 +71,14 @@ export const Dashboard = () => {
             {apiStatus === 'error' && '✕'}
           </div>
           <p className={`api-message ${apiStatus}`}>{apiMessage}</p>
-          {userInfo && (
+          {questions.length > 0 && (
             <div className="api-response">
-              <p>
-                <strong>Message:</strong> {userInfo.message}
-              </p>
-              <p>
-                <strong>Status:</strong> {userInfo.status}
-              </p>
+              <p><strong>Available Questions:</strong></p>
+              <ul>
+                {questions.map((question) => (
+                  <li key={question.question_id}>{question.text}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
@@ -87,8 +87,8 @@ export const Dashboard = () => {
           <h2>Next Steps</h2>
           <ul>
             <li>✓ Authentication setup complete</li>
-            <li>✓ API connection verified</li>
-            <li>⏳ Upload exam questions</li>
+            <li>✓ Questions API connected</li>
+            <li>⏳ Create new question endpoint UI</li>
             <li>⏳ Create exam sessions</li>
             <li>⏳ Start taking exams</li>
           </ul>
