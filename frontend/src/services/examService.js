@@ -14,7 +14,13 @@ const api = axios.create({
 
 // Add auth token to requests (will be implemented with authentication)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
+  let token = localStorage.getItem('cognito_id_token');
+  if (!token) {
+    token = localStorage.getItem('cognito_access_token');
+  }
+  if (!token) {
+    token = localStorage.getItem('authToken');
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -84,9 +84,14 @@ export const Dashboard = () => {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>ExamBuddy Dashboard</h1>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
+        <div className="header-actions">
+          <button onClick={() => navigate('/exam')} className="exam-button">
+            Start Exam
+          </button>
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-content">

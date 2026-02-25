@@ -6,6 +6,7 @@ import json
 import uuid
 import base64
 import time
+import random
 from typing import Any, Dict
 
 # Try to import FastAPI/Mangum - if they fail, use fallback handler
@@ -118,6 +119,7 @@ else:
             "project_id": "default"
         }
     ]
+    FALLBACK_EXAM_SESSIONS: Dict[str, Dict[str, Any]] = {}
 
     def _get_header(headers: Dict[str, Any], key: str) -> str:
         if not headers:
@@ -274,6 +276,273 @@ else:
                 'statusCode': 201,
                 'headers': cors_headers,
                 'body': json.dumps(question)
+            }
+
+        # Protected: POST /api/exams/start
+        if method == 'POST' and path == '/api/exams/start':
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            try:
+                payload = _parse_json_body(event)
+            except Exception:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid JSON body'})
+                }
+
+            project_id = payload.get('project_id', 'default')
+            mode = payload.get('mode', 'test')
+            requested_count = int(payload.get('question_count', 5))
+
+            project_questions = [q for q in FALLBACK_QUESTIONS if q.get('project_id') == project_id]
+            if not project_questions:
+                project_questions = FALLBACK_QUESTIONS
+
+            if not project_questions:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'No questions available'})
+                }
+
+            count = min(max(requested_count, 1), len(project_questions))
+            selected_questions = random.sample(project_questions, count)
+            session_id = f"sess-{uuid.uuid4().hex[:10]}"
+
+            FALLBACK_EXAM_SESSIONS[session_id] = {
+                'session_id': session_id,
+                'project_id': project_id,
+                'mode': mode,
+                'questions': selected_questions,
+                'answers': {},
+                'started_at': int(time.time()),
+            }
+
+            response_questions = []
+            for question in selected_questions:
+                response_questions.append({
+                    'question_id': question['question_id'],
+                    'text': question['text'],
+                    'answer_options': question['answer_options'],
+                    'time_limit_seconds': 60,
+                })
+
+            return {
+                'statusCode': 201,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'session_id': session_id,
+                    'questions': response_questions,
+                    'mode': mode,
+                    'started_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                    'total_time_seconds': len(response_questions) * 60,
+                })
+            }
+
+        # Protected: POST /api/exams/{session_id}/present
+        if method == 'POST' and path.startswith('/api/exams/') and path.endswith('/present'):
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'message': 'presentation recorded'})
+            }
+
+        # Protected: POST /api/exams/{session_id}/answers
+        if method == 'POST' and path.startswith('/api/exams/') and path.endswith('/answers'):
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            parts = path.strip('/').split('/')
+            if len(parts) < 4:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid session path'})
+                }
+
+            session_id = parts[2]
+            session = FALLBACK_EXAM_SESSIONS.get(session_id)
+            if not session:
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Session not found'})
+                }
+
+            try:
+                payload = _parse_json_body(event)
+            except Exception:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid JSON body'})
+                }
+
+            question_id = payload.get('question_id')
+            answer_index = payload.get('answer_index')
+            if question_id is None or answer_index is None:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'question_id and answer_index are required'})
+                }
+
+            question = next((q for q in session['questions'] if q['question_id'] == question_id), None)
+            if not question:
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Question not found in session'})
+                }
+
+            is_correct = int(answer_index) == int(question['correct_answer_index'])
+            session['answers'][question_id] = {
+                'answerIndex': int(answer_index),
+                'isCorrect': is_correct,
+                'timeSpent': 0,
+                'accepted': True,
+            }
+
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'is_correct': is_correct,
+                    'time_spent': 0,
+                    'accepted': True,
+                    'correct_index': question['correct_answer_index'] if session.get('mode') == 'test' else None,
+                })
+            }
+
+        # Protected: GET /api/exams/{session_id}/review
+        if method == 'GET' and path.startswith('/api/exams/') and path.endswith('/review'):
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            parts = path.strip('/').split('/')
+            if len(parts) < 4:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid session path'})
+                }
+
+            session_id = parts[2]
+            session = FALLBACK_EXAM_SESSIONS.get(session_id)
+            if not session:
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Session not found'})
+                }
+
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'questions': session['questions'],
+                    'answers': session['answers'],
+                    'review_time_seconds': len(session['questions']) * 30,
+                    'review_started_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                })
+            }
+
+        # Protected: POST /api/exams/{session_id}/submit
+        if method == 'POST' and path.startswith('/api/exams/') and path.endswith('/submit'):
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            parts = path.strip('/').split('/')
+            if len(parts) < 4:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid session path'})
+                }
+
+            session_id = parts[2]
+            session = FALLBACK_EXAM_SESSIONS.get(session_id)
+            if not session:
+                return {
+                    'statusCode': 404,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Session not found'})
+                }
+
+            answers = session.get('answers', {})
+            total_questions = len(session['questions'])
+            correct_count = sum(1 for answer in answers.values() if answer.get('isCorrect'))
+            score = (correct_count / total_questions * 100) if total_questions else 0
+
+            result_answers = []
+            for question in session['questions']:
+                result_answers.append({
+                    'question_id': question['question_id'],
+                    'selected_answer': answers.get(question['question_id'], {}).get('answerIndex'),
+                    'is_correct': answers.get(question['question_id'], {}).get('isCorrect', False),
+                })
+
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'attempt_id': f"attempt-{uuid.uuid4().hex[:10]}",
+                    'score': round(score, 2),
+                    'correct_count': correct_count,
+                    'total_questions': total_questions,
+                    'answers': result_answers,
+                    'completed_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                })
+            }
+
+        # Protected: DELETE /api/exams/{session_id}
+        if method == 'DELETE' and path.startswith('/api/exams/'):
+            if not _is_authorized(headers):
+                return {
+                    'statusCode': 401,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Unauthorized'})
+                }
+
+            parts = path.strip('/').split('/')
+            if len(parts) < 3:
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({'detail': 'Invalid session path'})
+                }
+
+            session_id = parts[2]
+            FALLBACK_EXAM_SESSIONS.pop(session_id, None)
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'message': 'Session cancelled'})
             }
         
         # Not found
