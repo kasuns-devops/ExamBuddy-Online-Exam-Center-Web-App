@@ -35,20 +35,34 @@ const QuestionCard = ({
     return classes.join(' ');
   };
 
+  const getTypeLabel = () => {
+    const type = question.question_type || 'single_choice';
+    return type.replace(/_/g, ' ').replace(/\b\w/g, (match) => match.toUpperCase());
+  };
+
   return (
     <div className="question-card">
       <div className="question-header">
         <span className="question-number">Question {questionNumber}</span>
-        {question.difficulty && (
-          <span className={`difficulty difficulty-${question.difficulty}`}>
-            {question.difficulty}
-          </span>
-        )}
+        <div className="question-meta">
+          {question.question_type && (
+            <span className="question-type">{getTypeLabel()}</span>
+          )}
+          {question.difficulty && (
+            <span className={`difficulty difficulty-${question.difficulty}`}>
+              {question.difficulty}
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="question-text">
         {question.text}
       </div>
+
+      <p className="question-hint">
+        Select the best answer option below for this question type.
+      </p>
       
       <div className="answer-options">
         {question.answer_options.map((option, index) => (

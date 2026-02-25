@@ -127,7 +127,7 @@ else:
             "correct_answer_index": 1,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "single_choice"
+            "question_type": "true_false"
         },
         {
             "question_id": "q-sample-3",
@@ -136,7 +136,7 @@ else:
             "correct_answer_index": 1,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "single_choice"
+            "question_type": "fill_in_blank"
         },
         {
             "question_id": "q-sample-4",
@@ -150,7 +150,7 @@ else:
             "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "single_choice"
+            "question_type": "multiple_response"
         },
         {
             "question_id": "q-sample-5",
@@ -159,7 +159,7 @@ else:
             "correct_answer_index": 1,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "single_choice"
+            "question_type": "matching"
         },
         {
             "question_id": "q-sample-6",
@@ -168,7 +168,7 @@ else:
             "correct_answer_index": 2,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "single_choice"
+            "question_type": "ordering"
         },
         {
             "question_id": "q-sample-7",
@@ -177,7 +177,7 @@ else:
             "correct_answer_index": 1,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "single_choice"
+            "question_type": "hotspot"
         },
         {
             "question_id": "q-sample-8",
@@ -191,7 +191,7 @@ else:
             "correct_answer_index": 1,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "single_choice"
+            "question_type": "build_list"
         },
         {
             "question_id": "q-sample-9",
@@ -428,6 +428,8 @@ else:
                     'question_id': question['question_id'],
                     'text': question['text'],
                     'answer_options': question['answer_options'],
+                    'question_type': question.get('question_type', 'single_choice'),
+                    'difficulty': question.get('difficulty', 'medium'),
                     'time_limit_seconds': 60,
                 })
 
