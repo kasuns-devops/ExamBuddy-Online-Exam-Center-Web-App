@@ -122,76 +122,102 @@ else:
         },
         {
             "question_id": "q-sample-2",
-            "text": "Which planet is known as the Red Planet?",
-            "answer_options": ["Earth", "Mars", "Venus", "Jupiter"],
-            "correct_answer_index": 1,
+            "text": "The Earth is flat.",
+            "answer_options": ["False", "True"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "true_false"
+            "question_type": "true_false",
+            "metadata": {
+                "options": ["False", "True"]
+            }
         },
         {
             "question_id": "q-sample-3",
-            "text": "Which data structure uses LIFO order?",
-            "answer_options": ["Queue", "Stack", "Heap", "Graph"],
-            "correct_answer_index": 1,
+            "text": "HTTP stands for ___ Transfer Protocol.",
+            "answer_options": ["Correct", "Incorrect"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "fill_in_blank"
+            "question_type": "fill_in_blank",
+            "metadata": {
+                "expected_text": "HyperText"
+            }
         },
         {
             "question_id": "q-sample-4",
             "text": "What does HTTP stand for?",
-            "answer_options": [
-                "HyperText Transfer Protocol",
-                "HighText Transfer Process",
-                "Hyper Transfer Text Program",
-                "Home Tool Transfer Protocol"
-            ],
+            "answer_options": ["Correct selection", "Incorrect selection"],
             "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "multiple_response"
+            "question_type": "multiple_response",
+            "metadata": {
+                "choices": [
+                    "HyperText Transfer Protocol",
+                    "HighText Transfer Process",
+                    "Hyper Transfer Text Program",
+                    "Home Tool Transfer Protocol"
+                ],
+                "correct_indices": [0]
+            }
         },
         {
             "question_id": "q-sample-5",
             "text": "In SQL, which clause is used to filter grouped records?",
-            "answer_options": ["WHERE", "HAVING", "ORDER BY", "DISTINCT"],
-            "correct_answer_index": 1,
+            "answer_options": ["All pairs correct", "At least one pair incorrect"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "matching"
+            "question_type": "matching",
+            "metadata": {
+                "left_items": ["WHERE", "HAVING", "ORDER BY"],
+                "right_items": ["Sort result set", "Filter grouped records", "Filter rows before grouping"],
+                "correct_pairs": {
+                    "WHERE": "Filter rows before grouping",
+                    "HAVING": "Filter grouped records",
+                    "ORDER BY": "Sort result set"
+                }
+            }
         },
         {
             "question_id": "q-sample-6",
             "text": "Which AWS service is object storage?",
-            "answer_options": ["EC2", "RDS", "S3", "Lambda"],
-            "correct_answer_index": 2,
+            "answer_options": ["Correct order", "Incorrect order"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "easy",
-            "question_type": "ordering"
+            "question_type": "ordering",
+            "metadata": {
+                "items": ["Draft requirements", "Design solution", "Implement", "Test and verify"],
+                "correct_order": ["Draft requirements", "Design solution", "Implement", "Test and verify"]
+            }
         },
         {
             "question_id": "q-sample-7",
             "text": "Which algorithm typically has O(log n) search time on sorted data?",
-            "answer_options": ["Linear Search", "Binary Search", "Bubble Sort", "DFS"],
-            "correct_answer_index": 1,
+            "answer_options": ["Correct area", "Incorrect area"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "hotspot"
+            "question_type": "hotspot",
+            "metadata": {
+                "hotspots": ["A", "B", "C", "D"],
+                "correct_hotspot": "B"
+            }
         },
         {
             "question_id": "q-sample-8",
             "text": "What is the primary purpose of JWT in web applications?",
-            "answer_options": [
-                "Image compression",
-                "Session/token-based authentication",
-                "Database indexing",
-                "HTML templating"
-            ],
-            "correct_answer_index": 1,
+            "answer_options": ["Correct build list", "Incorrect build list"],
+            "correct_answer_index": 0,
             "project_id": "default",
             "difficulty": "medium",
-            "question_type": "build_list"
+            "question_type": "build_list",
+            "metadata": {
+                "items": ["Open login page", "Submit credentials", "Receive token", "Call protected API"],
+                "correct_order": ["Open login page", "Submit credentials", "Receive token", "Call protected API"]
+            }
         },
         {
             "question_id": "q-sample-9",
@@ -200,7 +226,10 @@ else:
             "correct_answer_index": 2,
             "project_id": "default",
             "difficulty": "hard",
-            "question_type": "scenario"
+            "question_type": "scenario",
+            "metadata": {
+                "scenario": "A globally distributed service prioritizes availability during network partitions."
+            }
         },
         {
             "question_id": "q-sample-10",
@@ -430,6 +459,7 @@ else:
                     'answer_options': question['answer_options'],
                     'question_type': question.get('question_type', 'single_choice'),
                     'difficulty': question.get('difficulty', 'medium'),
+                    'metadata': question.get('metadata', {}),
                     'time_limit_seconds': 60,
                 })
 
