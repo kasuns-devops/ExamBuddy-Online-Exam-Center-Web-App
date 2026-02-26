@@ -57,6 +57,11 @@
   margin: 0 auto;
 }
 
+.config-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
 .exam-container h1 {
   color: white;
   text-align: center;
@@ -66,9 +71,11 @@
 
 .config-form {
   background: white;
-  padding: 2.5rem;
+  padding: 1.75rem;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 560px;
+  margin: 0 auto;
 }
 
 .form-group {
@@ -89,6 +96,16 @@
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
+}
+
+.config-form .form-group select {
+  width: 360px;
+  max-width: 100%;
+}
+
+.config-form .form-group input {
+  width: 200px;
+  max-width: 100%;
 }
 
 .form-group select:focus,
@@ -113,6 +130,26 @@
   position: sticky;
   bottom: 14px;
   z-index: 25;
+}
+
+.answer-feedback {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  font-weight: 700;
+  border: 2px solid transparent;
+}
+
+.answer-feedback.correct {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+}
+
+.answer-feedback.incorrect {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
 }
 
 .btn-primary {
@@ -157,6 +194,38 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
+.review-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.review-card h1 {
+  color: #1f2937;
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.review-subtitle {
+  text-align: center;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.review-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.review-controls {
+  margin-top: 1rem;
+  position: static;
+}
+
 .results-card h1 {
   color: #667eea;
   margin-bottom: 2rem;
@@ -187,6 +256,54 @@
   justify-content: center;
   gap: 2rem;
   margin: 2rem 0;
+}
+
+.results-detail-list {
+  text-align: left;
+  margin: 1.5rem 0 2rem;
+}
+
+.results-detail-list h2 {
+  margin-bottom: 1rem;
+  color: #1f2937;
+  font-size: 1.2rem;
+}
+
+.results-detail-item {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.8rem;
+  background: #fff;
+}
+
+.results-detail-item.correct {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.results-detail-item.incorrect {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.results-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.4rem;
+}
+
+.results-detail-status {
+  min-width: 80px;
+  text-align: right;
+}
+
+.results-detail-row {
+  color: #111827;
+  margin-top: 0.2rem;
 }
 
 .stat {

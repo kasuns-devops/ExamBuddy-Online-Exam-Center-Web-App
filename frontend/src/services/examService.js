@@ -14,9 +14,13 @@ const api = axios.create({
 
 // Add auth token to requests (will be implemented with authentication)
 api.interceptors.request.use((config) => {
-  let token = localStorage.getItem('cognito_id_token');
+  if (config.headers?.Authorization) {
+    return config;
+  }
+
+  let token = localStorage.getItem('cognito_access_token');
   if (!token) {
-    token = localStorage.getItem('cognito_access_token');
+    token = localStorage.getItem('cognito_id_token');
   }
   if (!token) {
     token = localStorage.getItem('authToken');
@@ -27,17 +31,46 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const requestWithAuthRetry = async (requestConfig) => {
+  try {
+    const response = await api.request(requestConfig);
+    return response;
+  } catch (error) {
+    if (error.response?.status !== 401) {
+      throw error;
+    }
+
+    const idToken = localStorage.getItem('cognito_id_token');
+    if (!idToken) {
+      throw error;
+    }
+
+    const retryResponse = await api.request({
+      ...requestConfig,
+      headers: {
+        ...(requestConfig.headers || {}),
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+    return retryResponse;
+  }
+};
+
 const examService = {
   /**
    * Start a new exam session
    */
   async startExam(projectId, mode, difficulty, questionCount) {
     try {
-      const response = await api.post('/api/exams/start', {
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: '/api/exams/start',
+        data: {
         project_id: projectId,
         mode,
         difficulty: difficulty || null,
         question_count: questionCount
+        }
       });
       return response.data;
     } catch (error) {
@@ -53,11 +86,24 @@ const examService = {
   /**
    * Submit an answer for a question
    */
-  async submitAnswer(sessionId, questionId, answerIndex) {
+  async submitAnswer(sessionId, questionId, answerPayload) {
     try {
-      const response = await api.post(`/api/exams/${sessionId}/answers`, {
+      const payload = {
         question_id: questionId,
-        answer_index: answerIndex
+      };
+
+      if (typeof answerPayload === 'number') {
+        payload.answer_index = answerPayload;
+      } else if (answerPayload && typeof answerPayload === 'object') {
+        Object.assign(payload, answerPayload);
+      }
+
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: `/api/exams/${sessionId}/answers`,
+        data: {
+          ...payload
+        }
       });
       return response.data;
     } catch (error) {
@@ -82,7 +128,10 @@ const examService = {
    */
   async startReview(sessionId) {
     try {
-      const response = await api.get(`/api/exams/${sessionId}/review`);
+      const response = await requestWithAuthRetry({
+        method: 'GET',
+        url: `/api/exams/${sessionId}/review`
+      });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.detail || 'Failed to start review');
@@ -94,7 +143,10 @@ const examService = {
    */
   async submitExam(sessionId) {
     try {
-      const response = await api.post(`/api/exams/${sessionId}/submit`);
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: `/api/exams/${sessionId}/submit`
+      });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.detail || 'Failed to submit exam');

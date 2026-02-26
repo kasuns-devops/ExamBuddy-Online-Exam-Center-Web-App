@@ -289,6 +289,164 @@ else:
             return body
         return json.loads(body)
 
+    def _build_correct_answer_payload(question: Dict[str, Any]) -> Dict[str, Any]:
+        question_type = question.get('question_type', 'single_choice')
+        metadata = question.get('metadata') or {}
+        answer_options = question.get('answer_options') or []
+        correct_index = question.get('correct_answer_index')
+
+        if question_type == 'fill_in_blank':
+            expected_text = (metadata.get('expected_text') or '').strip()
+            return {
+                'type': question_type,
+                'text': expected_text,
+                'display': expected_text,
+            }
+
+        if question_type == 'multiple_response':
+            correct_indices = metadata.get('correct_indices') or ([] if correct_index is None else [correct_index])
+            correct_labels = []
+            choices = metadata.get('choices') or answer_options
+            for idx in correct_indices:
+                try:
+                    correct_labels.append(choices[int(idx)])
+                except Exception:
+                    pass
+            return {
+                'type': question_type,
+                'indices': correct_indices,
+                'labels': correct_labels,
+                'display': ', '.join(correct_labels),
+            }
+
+        if question_type in ('ordering', 'build_list'):
+            correct_order = metadata.get('correct_order') or []
+            return {
+                'type': question_type,
+                'items': correct_order,
+                'display': ' -> '.join(correct_order),
+            }
+
+        if question_type == 'matching':
+            correct_pairs = metadata.get('correct_pairs') or {}
+            pair_strings = [f"{k} -> {v}" for k, v in correct_pairs.items()]
+            return {
+                'type': question_type,
+                'pairs': correct_pairs,
+                'display': '; '.join(pair_strings),
+            }
+
+        if question_type == 'hotspot':
+            spot = metadata.get('correct_hotspot')
+            return {
+                'type': question_type,
+                'spot': spot,
+                'display': str(spot) if spot is not None else '',
+            }
+
+        label = None
+        if correct_index is not None:
+            try:
+                label = answer_options[int(correct_index)]
+            except Exception:
+                label = None
+
+        return {
+            'type': question_type,
+            'index': correct_index,
+            'label': label,
+            'display': label if label is not None else str(correct_index),
+        }
+
+    def _evaluate_answer(question: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
+        question_type = question.get('question_type', 'single_choice')
+        metadata = question.get('metadata') or {}
+        answer_options = question.get('answer_options') or []
+        correct_index = question.get('correct_answer_index')
+
+        selected_answer = None
+        selected_display = ''
+        is_correct = False
+        accepted = False
+
+        if question_type == 'fill_in_blank':
+            answer_text = (payload.get('answer_text') or '').strip()
+            expected_text = (metadata.get('expected_text') or '').strip()
+            accepted = len(answer_text) > 0
+            is_correct = accepted and answer_text.lower() == expected_text.lower()
+            selected_answer = {'text': answer_text}
+            selected_display = answer_text
+
+        elif question_type == 'multiple_response':
+            selected_indices = payload.get('selected_indices') or []
+            normalized_selected = sorted({int(i) for i in selected_indices}) if isinstance(selected_indices, list) else []
+            correct_indices = metadata.get('correct_indices') or ([] if correct_index is None else [int(correct_index)])
+            normalized_correct = sorted({int(i) for i in correct_indices})
+            accepted = len(normalized_selected) > 0
+            is_correct = accepted and normalized_selected == normalized_correct
+            labels = []
+            choices = metadata.get('choices') or answer_options
+            for idx in normalized_selected:
+                try:
+                    labels.append(choices[idx])
+                except Exception:
+                    pass
+            selected_answer = {'indices': normalized_selected, 'labels': labels}
+            selected_display = ', '.join(labels)
+
+        elif question_type in ('ordering', 'build_list'):
+            ordered_items = payload.get('ordered_items') or []
+            if not isinstance(ordered_items, list):
+                ordered_items = []
+            correct_order = metadata.get('correct_order') or []
+            accepted = len(ordered_items) > 0
+            is_correct = accepted and ordered_items == correct_order
+            selected_answer = {'items': ordered_items}
+            selected_display = ' -> '.join(ordered_items)
+
+        elif question_type == 'matching':
+            selected_matches = payload.get('selected_matches') or {}
+            if not isinstance(selected_matches, dict):
+                selected_matches = {}
+            correct_pairs = metadata.get('correct_pairs') or {}
+            accepted = len(selected_matches) > 0
+            is_correct = accepted and selected_matches == correct_pairs
+            selected_answer = {'pairs': selected_matches}
+            selected_display = '; '.join([f"{k} -> {v}" for k, v in selected_matches.items()])
+
+        elif question_type == 'hotspot':
+            selected_hotspot = payload.get('selected_hotspot')
+            correct_hotspot = metadata.get('correct_hotspot')
+            accepted = selected_hotspot is not None and str(selected_hotspot).strip() != ''
+            is_correct = accepted and str(selected_hotspot) == str(correct_hotspot)
+            selected_answer = {'spot': selected_hotspot}
+            selected_display = str(selected_hotspot) if selected_hotspot is not None else ''
+
+        else:
+            answer_index = payload.get('answer_index')
+            if answer_index is not None:
+                try:
+                    answer_index = int(answer_index)
+                    accepted = True
+                    is_correct = answer_index == int(correct_index)
+                    selected_answer = {'index': answer_index}
+                    if 0 <= answer_index < len(answer_options):
+                        selected_answer['label'] = answer_options[answer_index]
+                        selected_display = answer_options[answer_index]
+                    else:
+                        selected_display = str(answer_index)
+                except Exception:
+                    accepted = False
+
+        return {
+            'question_type': question_type,
+            'accepted': accepted,
+            'is_correct': is_correct,
+            'selected_answer': selected_answer,
+            'selected_display': selected_display,
+            'correct_answer': _build_correct_answer_payload(question),
+        }
+
     # Fallback raw handler if FastAPI/Mangum not available
     def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         """Raw Lambda handler - returns CORS responses without FastAPI"""
@@ -526,12 +684,11 @@ else:
                 }
 
             question_id = payload.get('question_id')
-            answer_index = payload.get('answer_index')
-            if question_id is None or answer_index is None:
+            if question_id is None:
                 return {
                     'statusCode': 400,
                     'headers': cors_headers,
-                    'body': json.dumps({'detail': 'question_id and answer_index are required'})
+                    'body': json.dumps({'detail': 'question_id is required'})
                 }
 
             question = next((q for q in session['questions'] if q['question_id'] == question_id), None)
@@ -542,22 +699,28 @@ else:
                     'body': json.dumps({'detail': 'Question not found in session'})
                 }
 
-            is_correct = int(answer_index) == int(question['correct_answer_index'])
+            evaluation = _evaluate_answer(question, payload)
             session['answers'][question_id] = {
-                'answerIndex': int(answer_index),
-                'isCorrect': is_correct,
+                'answerIndex': evaluation.get('selected_answer', {}).get('index'),
+                'selected': evaluation.get('selected_answer'),
+                'selectedDisplay': evaluation.get('selected_display'),
+                'questionType': evaluation.get('question_type'),
+                'isCorrect': evaluation.get('is_correct', False),
+                'correctAnswer': evaluation.get('correct_answer'),
                 'timeSpent': 0,
-                'accepted': True,
+                'accepted': evaluation.get('accepted', False),
             }
 
             return {
                 'statusCode': 200,
                 'headers': cors_headers,
                 'body': json.dumps({
-                    'is_correct': is_correct,
+                    'is_correct': evaluation.get('is_correct', False),
                     'time_spent': 0,
-                    'accepted': True,
+                    'accepted': evaluation.get('accepted', False),
                     'correct_index': question['correct_answer_index'] if session.get('mode') == 'test' else None,
+                    'correct_answer': evaluation.get('correct_answer') if session.get('mode') == 'test' else None,
+                    'selected_answer': evaluation.get('selected_answer'),
                 })
             }
 
@@ -631,10 +794,20 @@ else:
 
             result_answers = []
             for question in session['questions']:
+                answer_state = answers.get(question['question_id'], {})
+                selected_value = answer_state.get('selected')
+                if selected_value is None:
+                    selected_value = {'index': answer_state.get('answerIndex')}
+
                 result_answers.append({
                     'question_id': question['question_id'],
-                    'selected_answer': answers.get(question['question_id'], {}).get('answerIndex'),
-                    'is_correct': answers.get(question['question_id'], {}).get('isCorrect', False),
+                    'question_text': question.get('text'),
+                    'question_type': question.get('question_type'),
+                    'answer_options': question.get('answer_options', []),
+                    'selected_answer': selected_value,
+                    'selected_display': answer_state.get('selectedDisplay', ''),
+                    'correct_answer': answer_state.get('correctAnswer') or _build_correct_answer_payload(question),
+                    'is_correct': answer_state.get('isCorrect', False),
                 })
 
             return {

@@ -18,8 +18,13 @@ const api = axios.create({
 // Request interceptor - Attach JWT token to requests
 api.interceptors.request.use(
   (config) => {
-    // Try to get Cognito ID token
-    let token = localStorage.getItem('cognito_id_token');
+    // Prefer Cognito access token for protected API requests
+    let token = localStorage.getItem('cognito_access_token');
+
+    // Fallback to Cognito ID token if access token not available
+    if (!token) {
+      token = localStorage.getItem('cognito_id_token');
+    }
     
     // Fallback to auth_token if Cognito token not available
     if (!token) {
@@ -47,6 +52,9 @@ api.interceptors.response.use(
       if (error.response.status === 401) {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_info');
+        localStorage.removeItem('cognito_access_token');
+        localStorage.removeItem('cognito_id_token');
+        localStorage.removeItem('cognito_refresh_token');
         window.location.href = '/login';
       }
       

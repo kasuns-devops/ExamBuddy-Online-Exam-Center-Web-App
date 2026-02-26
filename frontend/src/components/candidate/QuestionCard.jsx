@@ -10,11 +10,13 @@ const QuestionCard = ({
   onSelectAnswer,
   showCorrectAnswer = false,
   correctIndex = null,
+  correctAnswer = null,
   disabled = false,
   questionNumber
 }) => {
   const [orderedItems, setOrderedItems] = React.useState([]);
   const [dragIndex, setDragIndex] = React.useState(null);
+  const [orderConfirmed, setOrderConfirmed] = React.useState(false);
   const [blankValue, setBlankValue] = React.useState('');
   const [selectedMatches, setSelectedMatches] = React.useState({});
   const [selectedHotspot, setSelectedHotspot] = React.useState('');
@@ -22,38 +24,43 @@ const QuestionCard = ({
 
   const type = question.question_type || 'single_choice';
   const metadata = question.metadata || {};
+  const answerOptions = Array.isArray(question.answer_options) ? question.answer_options : [];
+  const selectedIndex = typeof selectedAnswer === 'number'
+    ? selectedAnswer
+    : (selectedAnswer && typeof selectedAnswer === 'object' && typeof selectedAnswer.answer_index === 'number'
+      ? selectedAnswer.answer_index
+      : null);
+  const selectedHotspotValue = selectedAnswer && typeof selectedAnswer === 'object'
+    ? selectedAnswer.selected_hotspot
+    : null;
 
   React.useEffect(() => {
     if (type === 'ordering' || type === 'build_list') {
-      setOrderedItems([...(metadata.items || [])]);
+      const sourceItems = metadata.items || question.answer_options || [];
+      setOrderedItems([...(Array.isArray(sourceItems) ? sourceItems : [])]);
     } else {
       setOrderedItems([]);
     }
 
+    setOrderConfirmed(false);
     setBlankValue('');
     setSelectedMatches({});
     setSelectedHotspot('');
     setSelectedMulti([]);
   }, [question.question_id, type]);
 
-  const markCompleted = () => {
-    onSelectAnswer(0);
-  };
-
-  const markIncomplete = () => {
-    onSelectAnswer(null);
-  };
+  const markIncomplete = () => onSelectAnswer(null);
   const getOptionClassName = (index) => {
     const classes = ['option'];
     
-    if (selectedAnswer === index) {
+    if (selectedIndex === index) {
       classes.push('selected');
     }
     
     if (showCorrectAnswer) {
       if (index === correctIndex) {
         classes.push('correct');
-      } else if (selectedAnswer === index && index !== correctIndex) {
+      } else if (selectedIndex === index && index !== correctIndex) {
         classes.push('incorrect');
       }
     }
@@ -81,13 +88,18 @@ const QuestionCard = ({
     updated.splice(dropIndex, 0, moved);
     setOrderedItems(updated);
     setDragIndex(null);
+    setOrderConfirmed(false);
+    markIncomplete();
   };
 
   const renderTypeSpecificArea = () => {
     if (type === 'ordering' || type === 'build_list') {
       return (
         <div className="type-box">
-          <p className="type-helper">Drag and drop to reorder, then confirm.</p>
+          <p className="type-helper">Drag and drop each row using ☰, then click confirm.</p>
+          {orderedItems.length === 0 && (
+            <p className="type-empty">No items available for ordering.</p>
+          )}
           <div className="drag-list">
             {orderedItems.map((item, index) => (
               <div
@@ -98,17 +110,21 @@ const QuestionCard = ({
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => handleDrop(index)}
               >
+                <span className="drag-position">{index + 1}</span>
                 <span className="drag-handle">☰</span>
                 <span>{item}</span>
               </div>
             ))}
           </div>
           <button
-            className="type-action"
+            className={`type-action ${orderConfirmed ? 'confirmed' : ''}`}
             disabled={disabled || orderedItems.length === 0}
-            onClick={markCompleted}
+            onClick={() => {
+              onSelectAnswer({ ordered_items: orderedItems });
+              setOrderConfirmed(true);
+            }}
           >
-            Confirm Order
+            {orderConfirmed ? 'Order Confirmed' : 'Confirm Order'}
           </button>
         </div>
       );
@@ -133,7 +149,7 @@ const QuestionCard = ({
                   const next = { ...selectedMatches, [left]: event.target.value };
                   setSelectedMatches(next);
                   if (leftItems.every((item) => next[item])) {
-                    markCompleted();
+                    onSelectAnswer({ selected_matches: next });
                   } else {
                     markIncomplete();
                   }
@@ -146,7 +162,11 @@ const QuestionCard = ({
               </select>
             </div>
           ))}
-          <button className="type-action" disabled={disabled || !allSelected} onClick={markCompleted}>
+          <button
+            className="type-action"
+            disabled={disabled || !allSelected}
+            onClick={() => onSelectAnswer({ selected_matches: selectedMatches })}
+          >
             Confirm Matches
           </button>
         </div>
@@ -155,6 +175,7 @@ const QuestionCard = ({
 
     if (type === 'hotspot') {
       const hotspots = metadata.hotspots || ['A', 'B', 'C', 'D'];
+      const correctSpot = correctAnswer?.spot || metadata.correct_hotspot;
       return (
         <div className="type-box">
           <p className="type-helper">Click a hotspot area.</p>
@@ -162,11 +183,11 @@ const QuestionCard = ({
             {hotspots.map((spot) => (
               <button
                 key={spot}
-                className={`hotspot-btn ${selectedHotspot === spot ? 'active' : ''}`}
+                className={`hotspot-btn ${selectedHotspot === spot ? 'active' : ''} ${showCorrectAnswer && spot === correctSpot ? 'correct' : ''} ${showCorrectAnswer && selectedHotspotValue === spot && spot !== correctSpot ? 'incorrect' : ''}`}
                 disabled={disabled}
                 onClick={() => {
                   setSelectedHotspot(spot);
-                  markCompleted();
+                  onSelectAnswer({ selected_hotspot: spot });
                 }}
               >
                 {spot}
@@ -191,7 +212,7 @@ const QuestionCard = ({
               const value = event.target.value;
               setBlankValue(value);
               if (value.trim().length > 0) {
-                markCompleted();
+                onSelectAnswer({ answer_text: value.trim() });
               } else {
                 markIncomplete();
               }
@@ -221,7 +242,7 @@ const QuestionCard = ({
                         : [...selectedMulti, index];
                       setSelectedMulti(updated);
                       if (updated.length > 0) {
-                        markCompleted();
+                        onSelectAnswer({ selected_indices: updated });
                       } else {
                         markIncomplete();
                       }
@@ -245,7 +266,7 @@ const QuestionCard = ({
             {options.map((option, index) => (
               <button
                 key={option}
-                className={`tf-btn ${selectedAnswer === index ? 'active' : ''}`}
+                className={`tf-btn ${selectedIndex === index ? 'active' : ''} ${showCorrectAnswer && index === correctIndex ? 'correct' : ''} ${showCorrectAnswer && selectedIndex === index && index !== correctIndex ? 'incorrect' : ''}`}
                 disabled={disabled}
                 onClick={() => onSelectAnswer(index)}
               >
@@ -288,7 +309,10 @@ const QuestionCard = ({
       
       {(type === 'single_choice' || type === 'scenario') && (
         <div className="answer-options">
-          {question.answer_options.map((option, index) => (
+          {answerOptions.length === 0 && (
+            <div className="type-helper">No answer options found for this question.</div>
+          )}
+          {answerOptions.map((option, index) => (
             <button
               key={index}
               className={getOptionClassName(index)}
@@ -302,7 +326,7 @@ const QuestionCard = ({
               {showCorrectAnswer && index === correctIndex && (
                 <span className="check-icon">✓</span>
               )}
-              {showCorrectAnswer && selectedAnswer === index && index !== correctIndex && (
+              {showCorrectAnswer && selectedIndex === index && index !== correctIndex && (
                 <span className="cross-icon">✗</span>
               )}
             </button>

@@ -13,6 +13,8 @@ import './ExamPage.css';
 const ExamPage = () => {
   const [phase, setPhase] = useState('selection'); // selection, config, exam, review, results
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  const [lastSubmission, setLastSubmission] = useState(null);
   
   // Project and config state
   const [selectedProject, setSelectedProject] = useState(null);
@@ -30,9 +32,12 @@ const ExamPage = () => {
     recordAnswer,
     nextQuestion,
     setResults,
+    startReviewPhase,
     resetExam,
     finalScore,
     answers,
+    totalQuestions,
+    isLoading,
     setLoading,
     setError,
     error,
@@ -50,16 +55,46 @@ const ExamPage = () => {
       .catch((err) => console.error('recordPresentation error:', err));
   }, [phase, sessionId, currentQuestionIndex]);
 
-  const { timeRemaining } = useExamTimer(handleTimeUp);
+  const shouldPauseTimer = phase === 'exam' && mode === 'test' && answerSubmitted;
+  const { timeRemaining } = useExamTimer(handleTimeUp, shouldPauseTimer);
 
   function handleTimeUp() {
     if (isReviewPhase) {
       handleSubmitExam();
     } else {
-      // Auto-advance to next question
-      handleNext();
+      handleTimeoutAdvance();
     }
   }
+
+  const handleTimeoutAdvance = async () => {
+    const currentQuestion = getCurrentQuestion();
+    const currentType = currentQuestion?.question_type || 'single_choice';
+    const requiresConfirm = currentType === 'ordering' || currentType === 'build_list';
+
+    if (requiresConfirm && selectedAnswer === null) {
+      await handleMoveToNextQuestion();
+      return;
+    }
+
+    if (mode === 'test') {
+      if (selectedAnswer !== null && !answerSubmitted) {
+        const result = await handleSubmitAnswer();
+        if (result) {
+          setAnswerSubmitted(true);
+          setLastSubmission(result);
+        }
+      }
+      await handleMoveToNextQuestion();
+      return;
+    }
+
+    if (selectedAnswer !== null) {
+      await handlePrimaryAction();
+      return;
+    }
+
+    await handleMoveToNextQuestion();
+  };
 
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
@@ -71,10 +106,16 @@ const ExamPage = () => {
     try {
       setLoading(true);
       setError(null);
+
+      const availableQuestions = selectedProject?.questionCount || 1;
+      const safeQuestionCount = Math.max(1, Math.min(questionCount, availableQuestions));
+      if (safeQuestionCount !== questionCount) {
+        setQuestionCount(safeQuestionCount);
+      }
       
-      console.log('Starting exam with:', { projectId, mode, difficulty, questionCount });
+      console.log('Starting exam with:', { projectId, mode, difficulty, questionCount: safeQuestionCount });
       
-      const data = await examService.startExam(projectId, mode, difficulty, questionCount);
+      const data = await examService.startExam(projectId, mode, difficulty, safeQuestionCount);
       
       console.log('Exam started:', data);
       
@@ -90,6 +131,10 @@ const ExamPage = () => {
 
   const handleAnswerSelect = (answerIndex) => {
     setSelectedAnswer(answerIndex);
+    if (mode === 'test') {
+      setAnswerSubmitted(false);
+      setLastSubmission(null);
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -110,32 +155,92 @@ const ExamPage = () => {
         answerIndex: selectedAnswer,
         ...result
       });
-      
-      setSelectedAnswer(null);
+      return result;
     } catch (err) {
       setError(err.message);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNext = async () => {
-    await handleSubmitAnswer();
+  const handleMoveToNextQuestion = async () => {
     const progress = getProgress();
-    
+
     if (progress.current >= progress.total) {
-      // All questions answered
       if (mode === 'exam') {
-        setPhase('review');
-        // TODO: Start review phase
+        try {
+          setLoading(true);
+          const reviewData = await examService.startReview(sessionId);
+          startReviewPhase(reviewData);
+          setPhase('review');
+        } catch (err) {
+          setError(err.message || 'Failed to load review phase.');
+        } finally {
+          setLoading(false);
+        }
       } else {
-        // Test mode - go straight to results
         await handleSubmitExam();
       }
     } else {
       nextQuestion();
       setSelectedAnswer(null);
+      setAnswerSubmitted(false);
+      setLastSubmission(null);
     }
+  };
+
+  const handlePrimaryAction = async () => {
+    if (mode === 'test') {
+      if (!answerSubmitted) {
+        const result = await handleSubmitAnswer();
+        if (result) {
+          setAnswerSubmitted(true);
+          setLastSubmission(result);
+        }
+        return;
+      }
+
+      await handleMoveToNextQuestion();
+      return;
+    }
+
+    const result = await handleSubmitAnswer();
+    if (!result) return;
+    await handleMoveToNextQuestion();
+  };
+
+  const getPrimaryButtonLabel = (progress) => {
+    if (mode === 'test') {
+      if (!answerSubmitted) {
+        return 'Submit Answer';
+      }
+      return progress.current >= progress.total ? 'Finish Exam' : 'Next Question';
+    }
+
+    return progress.current >= progress.total ? 'Review Answers' : 'Next Question';
+  };
+
+  const isPrimaryDisabled = () => {
+    const currentQuestion = getCurrentQuestion();
+    const currentType = currentQuestion?.question_type || 'single_choice';
+    const requiresConfirm = currentType === 'ordering' || currentType === 'build_list';
+
+    if (mode === 'test') {
+      if (answerSubmitted) {
+        return isLoading;
+      }
+      if (requiresConfirm) {
+        return selectedAnswer === null || isLoading;
+      }
+      return selectedAnswer === null || isLoading;
+    }
+
+    if (requiresConfirm) {
+      return selectedAnswer === null || isLoading;
+    }
+
+    return selectedAnswer === null || isLoading;
   };
 
   const handleSubmitExam = async () => {
@@ -157,6 +262,8 @@ const ExamPage = () => {
     setProjectId('');
     setPhase('selection');
     setSelectedAnswer(null);
+    setAnswerSubmitted(false);
+    setLastSubmission(null);
   };
 
   const handleBackToSelection = () => {
@@ -218,9 +325,14 @@ const ExamPage = () => {
               <input
                 type="number"
                 min="1"
-                max="50"
+                max={Math.max(1, selectedProject?.questionCount || 1)}
                 value={questionCount}
-                onChange={(e) => setQuestionCount(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const availableQuestions = Math.max(1, selectedProject?.questionCount || 1);
+                  const parsed = parseInt(e.target.value, 10);
+                  const nextValue = Number.isNaN(parsed) ? 1 : Math.min(Math.max(parsed, 1), availableQuestions);
+                  setQuestionCount(nextValue);
+                }}
               />
               <small className="help-text">
                 Available: {selectedProject?.questionCount || 0} questions
@@ -259,20 +371,71 @@ const ExamPage = () => {
               selectedAnswer={selectedAnswer}
               onSelectAnswer={handleAnswerSelect}
               questionNumber={progress.current}
+              showCorrectAnswer={mode === 'test' && answerSubmitted}
+              correctIndex={lastSubmission?.correct_index ?? null}
+              correctAnswer={lastSubmission?.correct_answer ?? null}
+              disabled={mode === 'test' && answerSubmitted}
             />
+          )}
+
+          {mode === 'test' && answerSubmitted && lastSubmission && (
+            <div className={`answer-feedback ${lastSubmission.is_correct ? 'correct' : 'incorrect'}`}>
+              {lastSubmission.is_correct
+                ? '✅ Correct answer submitted. Timer is paused so you can study this question.'
+                : `❌ Incorrect answer. Correct answer: ${lastSubmission?.correct_answer?.display || 'see highlighted answer above'}. Timer is paused so you can review.`}
+            </div>
           )}
 
           <div className="exam-controls">
             <button 
               className="btn-primary"
-              onClick={handleNext}
-              disabled={selectedAnswer === null}
+              onClick={handlePrimaryAction}
+              disabled={isPrimaryDisabled()}
             >
-              {progress.current >= progress.total ? 'Finish' : 'Next'}
+              {getPrimaryButtonLabel(progress)}
             </button>
           </div>
 
           {error && <div className="error-message">{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'review') {
+    const answeredCount = Object.keys(answers).length;
+    const unansweredCount = Math.max(totalQuestions - answeredCount, 0);
+
+    return (
+      <div className="exam-page">
+        <div className="exam-container">
+          <div className="review-card">
+            <h1>🧾 Review Answers</h1>
+            <p className="review-subtitle">Exam mode keeps feedback hidden until final submission.</p>
+
+            <div className="review-stats">
+              <div className="stat">
+                <span className="stat-label">Total Questions</span>
+                <span className="stat-value">{totalQuestions}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Answered</span>
+                <span className="stat-value">{answeredCount}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Unanswered</span>
+                <span className="stat-value">{unansweredCount}</span>
+              </div>
+            </div>
+
+            <div className="exam-controls review-controls">
+              <button className="btn-primary" onClick={handleSubmitExam} disabled={isLoading}>
+                Submit Exam
+              </button>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+          </div>
         </div>
       </div>
     );
@@ -297,6 +460,26 @@ const ExamPage = () => {
                 <span className="stat-value">{Object.keys(answers).length}</span>
               </div>
             </div>
+
+            {Array.isArray(answers) && answers.length > 0 && (
+              <div className="results-detail-list">
+                <h2>Answer Review</h2>
+                {answers.map((item, index) => (
+                  <div key={item.question_id || index} className={`results-detail-item ${item.is_correct ? 'correct' : 'incorrect'}`}>
+                    <div className="results-detail-header">
+                      <span>Q{index + 1}: {item.question_text}</span>
+                      <span className="results-detail-status">{item.is_correct ? 'Correct' : 'Incorrect'}</span>
+                    </div>
+                    <div className="results-detail-row">
+                      <strong>Your answer:</strong> {item.selected_display || 'No answer submitted'}
+                    </div>
+                    <div className="results-detail-row">
+                      <strong>Correct answer:</strong> {item?.correct_answer?.display || '-'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button className="btn-primary" onClick={handleNewExam}>
               Take Another Exam

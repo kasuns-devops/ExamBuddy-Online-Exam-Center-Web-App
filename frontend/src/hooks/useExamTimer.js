@@ -4,11 +4,12 @@
 import { useEffect, useRef, useCallback } from 'react';
 import useExamStore from '../stores/examStore';
 
-export const useExamTimer = (onTimeUp) => {
+export const useExamTimer = (onTimeUp, paused = false) => {
   const {
     timeRemaining,
     reviewTimeRemaining,
     isReviewPhase,
+    questionStartTime,
     updateTimeRemaining,
     updateReviewTime
   } = useExamStore();
@@ -16,8 +17,13 @@ export const useExamTimer = (onTimeUp) => {
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const initialTimeRef = useRef(null);
+  const onTimeUpRef = useRef(onTimeUp);
 
-  const startTimer = useCallback((initialTime) => {
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
+
+  const startTimer = useCallback((initialTime, reviewMode = false) => {
     startTimeRef.current = Date.now();
     initialTimeRef.current = initialTime;
 
@@ -31,7 +37,7 @@ export const useExamTimer = (onTimeUp) => {
       const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const remaining = Math.max(0, initialTimeRef.current - elapsed);
 
-      if (isReviewPhase) {
+      if (reviewMode) {
         updateReviewTime(remaining);
       } else {
         updateTimeRemaining(remaining);
@@ -39,12 +45,13 @@ export const useExamTimer = (onTimeUp) => {
 
       if (remaining === 0) {
         clearInterval(intervalRef.current);
-        if (onTimeUp) {
-          onTimeUp();
+        intervalRef.current = null;
+        if (onTimeUpRef.current) {
+          onTimeUpRef.current();
         }
       }
     }, 100);
-  }, [isReviewPhase, updateTimeRemaining, updateReviewTime, onTimeUp]);
+  }, [updateTimeRemaining, updateReviewTime]);
 
   const stopTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -60,13 +67,31 @@ export const useExamTimer = (onTimeUp) => {
     }
   }, [stopTimer, startTimer]);
 
-  // Auto-start timer when time changes
+  // Start/reset question timer only when question changes
   useEffect(() => {
-    const currentTime = isReviewPhase ? reviewTimeRemaining : timeRemaining;
-    if (currentTime > 0 && !intervalRef.current) {
-      startTimer(currentTime);
+    if (paused) {
+      stopTimer();
+      return;
     }
-  }, [timeRemaining, reviewTimeRemaining, isReviewPhase, startTimer]);
+    if (isReviewPhase) return;
+    if (!questionStartTime) return;
+    if (timeRemaining <= 0) return;
+
+    startTimer(timeRemaining, false);
+  }, [questionStartTime, isReviewPhase, paused, startTimer, stopTimer]);
+
+  // Start review timer when review phase begins (or first receives a positive value)
+  useEffect(() => {
+    if (paused) {
+      stopTimer();
+      return;
+    }
+    if (!isReviewPhase) return;
+    if (reviewTimeRemaining <= 0) return;
+    if (intervalRef.current) return;
+
+    startTimer(reviewTimeRemaining, true);
+  }, [isReviewPhase, reviewTimeRemaining, paused, startTimer, stopTimer]);
 
   // Cleanup on unmount
   useEffect(() => {
