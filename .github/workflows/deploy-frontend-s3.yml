@@ -1,4 +1,4 @@
-name: Deploy Frontend (S3 + CloudFront)
+name: Frontend Deploy (S3 + CloudFront)
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend-s3.yml'
   workflow_dispatch:
+
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AWS_REGION: eu-north-1

@@ -1,12 +1,22 @@
-name: Deploy ExamBuddy
+name: Backend CI/CD (SAM Deploy)
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+
+concurrency:
+  group: backend-cicd-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AWS_REGION: eu-north-1

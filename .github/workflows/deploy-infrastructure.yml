@@ -1,4 +1,4 @@
-name: Deploy AWS Infrastructure
+name: Infrastructure Deploy (CloudFormation)
 
 on:
   push:
@@ -19,6 +19,10 @@ on:
           - dev
           - staging
           - prod
+
+concurrency:
+  group: infra-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AWS_REGION: eu-north-1
