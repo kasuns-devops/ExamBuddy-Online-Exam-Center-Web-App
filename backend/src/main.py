@@ -7,9 +7,10 @@ import uuid
 import base64
 import time
 import random
+import copy
 from typing import Any, Dict
 
-# Try to import FastAPI/Mangum - if they fail, use fallback handler
+# Try to import FastAPI/Mangum - if they fail (including config errors), use fallback handler
 try:
     from fastapi import FastAPI, Request
     from fastapi.responses import JSONResponse
@@ -17,7 +18,7 @@ try:
     from src.config import settings
     from src.middleware.error_handler import register_error_handlers
     FASTAPI_AVAILABLE = True
-except ImportError as e:
+except Exception:
     FASTAPI_AVAILABLE = False
 
 
@@ -447,6 +448,55 @@ else:
             'correct_answer': _build_correct_answer_payload(question),
         }
 
+    def _shuffle_question_options(question: Dict[str, Any]) -> Dict[str, Any]:
+        shuffled = copy.deepcopy(question)
+        question_type = shuffled.get('question_type', 'single_choice')
+
+        # Shuffle classic answer options while preserving correct answer mapping
+        options = shuffled.get('answer_options')
+        correct_index = shuffled.get('correct_answer_index')
+        if (
+            isinstance(options, list)
+            and len(options) > 1
+            and correct_index is not None
+            and question_type in ('single_choice', 'scenario', 'true_false')
+        ):
+            order = list(range(len(options)))
+            random.shuffle(order)
+            shuffled['answer_options'] = [options[i] for i in order]
+            try:
+                shuffled['correct_answer_index'] = order.index(int(correct_index))
+            except Exception:
+                pass
+
+        # Shuffle multiple-response choices and remap correct indices
+        if question_type == 'multiple_response':
+            metadata = shuffled.get('metadata') or {}
+            choices = metadata.get('choices')
+            if isinstance(choices, list) and len(choices) > 1:
+                order = list(range(len(choices)))
+                random.shuffle(order)
+                metadata['choices'] = [choices[i] for i in order]
+
+                original_correct = metadata.get('correct_indices')
+                if not isinstance(original_correct, list):
+                    fallback_index = shuffled.get('correct_answer_index')
+                    original_correct = [] if fallback_index is None else [fallback_index]
+
+                remapped_correct = []
+                for idx in original_correct:
+                    try:
+                        idx_int = int(idx)
+                        if 0 <= idx_int < len(choices):
+                            remapped_correct.append(order.index(idx_int))
+                    except Exception:
+                        continue
+
+                metadata['correct_indices'] = sorted(remapped_correct)
+                shuffled['metadata'] = metadata
+
+        return shuffled
+
     # Fallback raw handler if FastAPI/Mangum not available
     def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         """Raw Lambda handler - returns CORS responses without FastAPI"""
@@ -597,7 +647,10 @@ else:
                 }
 
             count = min(max(requested_count, 1), len(project_questions))
-            selected_questions = random.sample(project_questions, count)
+            selected_questions = [
+                _shuffle_question_options(question)
+                for question in random.sample(project_questions, count)
+            ]
             session_id = f"sess-{uuid.uuid4().hex[:10]}"
 
             FALLBACK_EXAM_SESSIONS[session_id] = {
