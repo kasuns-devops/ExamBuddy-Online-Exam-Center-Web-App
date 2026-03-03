@@ -11,7 +11,7 @@ on:
 
 env:
   AWS_REGION: eu-north-1
-  S3_BUCKET: ExamBuddy-Front
+  S3_BUCKET: exambuddy-front
 
 jobs:
   deploy-frontend:

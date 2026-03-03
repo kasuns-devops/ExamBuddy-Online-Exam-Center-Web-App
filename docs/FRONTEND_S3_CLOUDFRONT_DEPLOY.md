@@ -66,7 +66,7 @@ A workflow is added at:
 
 Configured bucket:
 
-- `ExamBuddy-Front`
+- `exambuddy-front`
 
 Trigger behavior:
 
