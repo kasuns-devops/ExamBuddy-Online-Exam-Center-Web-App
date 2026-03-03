@@ -105,6 +105,7 @@ jobs:
         run: |
           sam deploy \
             --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
             --stack-name exambuddy-staging \
             --s3-prefix exambuddy-staging \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
