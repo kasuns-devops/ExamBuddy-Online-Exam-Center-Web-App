@@ -18,6 +18,7 @@ const QuestionCard = ({
   const [dragIndex, setDragIndex] = React.useState(null);
   const [touchDragIndex, setTouchDragIndex] = React.useState(null);
   const [touchDropIndex, setTouchDropIndex] = React.useState(null);
+  const [activePointerId, setActivePointerId] = React.useState(null);
   const [orderConfirmed, setOrderConfirmed] = React.useState(false);
   const [blankValue, setBlankValue] = React.useState('');
   const [selectedMatches, setSelectedMatches] = React.useState({});
@@ -35,6 +36,10 @@ const QuestionCard = ({
   const selectedHotspotValue = selectedAnswer && typeof selectedAnswer === 'object'
     ? selectedAnswer.selected_hotspot
     : null;
+  const isCoarsePointer = React.useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches,
+    []
+  );
 
   React.useEffect(() => {
     if (type === 'ordering' || type === 'build_list') {
@@ -100,19 +105,19 @@ const QuestionCard = ({
     setDragIndex(null);
   };
 
-  const handleTouchStart = (index) => {
+  const handleTouchStart = (index, pointerId = null) => {
     if (disabled) return;
     setTouchDragIndex(index);
     setTouchDropIndex(index);
+    if (pointerId !== null) {
+      setActivePointerId(pointerId);
+    }
   };
 
-  const handleTouchMove = (event) => {
+  const handleTouchMove = (clientX, clientY) => {
     if (touchDragIndex === null) return;
 
-    const touch = event.touches?.[0];
-    if (!touch) return;
-
-    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetElement = document.elementFromPoint(clientX, clientY);
     const rowElement = targetElement?.closest?.('.drag-item');
     if (!rowElement) return;
 
@@ -120,13 +125,12 @@ const QuestionCard = ({
     if (Number.isInteger(nextIndex)) {
       setTouchDropIndex(nextIndex);
     }
-
-    event.preventDefault();
   };
 
   const clearTouchState = () => {
     setTouchDragIndex(null);
     setTouchDropIndex(null);
+    setActivePointerId(null);
   };
 
   const handleTouchEnd = () => {
@@ -140,6 +144,36 @@ const QuestionCard = ({
 
     clearTouchState();
   };
+
+  React.useEffect(() => {
+    if (activePointerId === null) return;
+
+    const onPointerMove = (event) => {
+      if (event.pointerId !== activePointerId) return;
+      handleTouchMove(event.clientX, event.clientY);
+      event.preventDefault();
+    };
+
+    const onPointerUp = (event) => {
+      if (event.pointerId !== activePointerId) return;
+      handleTouchEnd();
+    };
+
+    const onPointerCancel = (event) => {
+      if (event.pointerId !== activePointerId) return;
+      clearTouchState();
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+    };
+  }, [activePointerId, touchDragIndex, touchDropIndex]);
 
   const handleMoveItem = (index, direction) => {
     if (disabled) return;
@@ -165,7 +199,6 @@ const QuestionCard = ({
           )}
           <div
             className={`drag-list ${touchDragIndex !== null ? 'touch-active' : ''}`}
-            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={clearTouchState}
           >
@@ -174,15 +207,23 @@ const QuestionCard = ({
                 key={`${item}-${index}`}
                 className={`drag-item ${touchDragIndex === index ? 'touch-dragging' : ''} ${touchDragIndex !== null && touchDropIndex === index && touchDragIndex !== index ? 'touch-target' : ''}`}
                 data-order-index={index}
-                draggable={!disabled}
+                draggable={!disabled && !isCoarsePointer}
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => handleDrop(index)}
                 onDragEnd={() => setDragIndex(null)}
-                onTouchStart={() => handleTouchStart(index)}
               >
                 <span className="drag-position">{index + 1}</span>
-                <span className="drag-handle">☰</span>
+                <span
+                  className="drag-handle"
+                  onTouchStart={() => handleTouchStart(index)}
+                  onPointerDown={(event) => {
+                    if (event.pointerType !== 'touch') return;
+                    handleTouchStart(index, event.pointerId);
+                  }}
+                >
+                  ☰
+                </span>
                 <span className="drag-text">{item}</span>
                 <div className="drag-actions">
                   <button

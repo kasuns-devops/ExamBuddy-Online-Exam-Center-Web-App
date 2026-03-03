@@ -177,6 +177,15 @@
 .drag-handle {
   color: #6b7280;
   user-select: none;
+  cursor: grab;
+  touch-action: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.drag-item.touch-dragging .drag-handle {
+  cursor: grabbing;
+  background: #dbeafe;
 }
 
 .drag-text {
