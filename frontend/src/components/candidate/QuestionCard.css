@@ -132,6 +132,10 @@
   gap: 8px;
 }
 
+.drag-list.touch-active {
+  touch-action: none;
+}
+
 .drag-item {
   display: flex;
   align-items: center;
@@ -143,6 +147,18 @@
   color: #111827;
   min-height: 44px;
   overflow-wrap: anywhere;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.drag-item.touch-dragging {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.drag-item.touch-target {
+  border-color: #16a34a;
+  background: #ecfdf5;
 }
 
 .drag-position {
@@ -160,6 +176,7 @@
 
 .drag-handle {
   color: #6b7280;
+  user-select: none;
 }
 
 .drag-text {

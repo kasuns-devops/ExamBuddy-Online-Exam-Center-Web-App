@@ -16,6 +16,8 @@ const QuestionCard = ({
 }) => {
   const [orderedItems, setOrderedItems] = React.useState([]);
   const [dragIndex, setDragIndex] = React.useState(null);
+  const [touchDragIndex, setTouchDragIndex] = React.useState(null);
+  const [touchDropIndex, setTouchDropIndex] = React.useState(null);
   const [orderConfirmed, setOrderConfirmed] = React.useState(false);
   const [blankValue, setBlankValue] = React.useState('');
   const [selectedMatches, setSelectedMatches] = React.useState({});
@@ -80,16 +82,63 @@ const QuestionCard = ({
     setDragIndex(index);
   };
 
+  const reorderItems = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+
+    const updated = [...orderedItems];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    setOrderedItems(updated);
+    setOrderConfirmed(false);
+    markIncomplete();
+  };
+
   const handleDrop = (dropIndex) => {
     if (dragIndex === null || dragIndex === dropIndex) return;
 
-    const updated = [...orderedItems];
-    const [moved] = updated.splice(dragIndex, 1);
-    updated.splice(dropIndex, 0, moved);
-    setOrderedItems(updated);
+    reorderItems(dragIndex, dropIndex);
     setDragIndex(null);
-    setOrderConfirmed(false);
-    markIncomplete();
+  };
+
+  const handleTouchStart = (index) => {
+    if (disabled) return;
+    setTouchDragIndex(index);
+    setTouchDropIndex(index);
+  };
+
+  const handleTouchMove = (event) => {
+    if (touchDragIndex === null) return;
+
+    const touch = event.touches?.[0];
+    if (!touch) return;
+
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    const rowElement = targetElement?.closest?.('.drag-item');
+    if (!rowElement) return;
+
+    const nextIndex = Number(rowElement.getAttribute('data-order-index'));
+    if (Number.isInteger(nextIndex)) {
+      setTouchDropIndex(nextIndex);
+    }
+
+    event.preventDefault();
+  };
+
+  const clearTouchState = () => {
+    setTouchDragIndex(null);
+    setTouchDropIndex(null);
+  };
+
+  const handleTouchEnd = () => {
+    if (
+      touchDragIndex !== null
+      && touchDropIndex !== null
+      && touchDragIndex !== touchDropIndex
+    ) {
+      reorderItems(touchDragIndex, touchDropIndex);
+    }
+
+    clearTouchState();
   };
 
   const handleMoveItem = (index, direction) => {
@@ -114,15 +163,23 @@ const QuestionCard = ({
           {orderedItems.length === 0 && (
             <p className="type-empty">No items available for ordering.</p>
           )}
-          <div className="drag-list">
+          <div
+            className={`drag-list ${touchDragIndex !== null ? 'touch-active' : ''}`}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={clearTouchState}
+          >
             {orderedItems.map((item, index) => (
               <div
                 key={`${item}-${index}`}
-                className="drag-item"
+                className={`drag-item ${touchDragIndex === index ? 'touch-dragging' : ''} ${touchDragIndex !== null && touchDropIndex === index && touchDragIndex !== index ? 'touch-target' : ''}`}
+                data-order-index={index}
                 draggable={!disabled}
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => handleDrop(index)}
+                onDragEnd={() => setDragIndex(null)}
+                onTouchStart={() => handleTouchStart(index)}
               >
                 <span className="drag-position">{index + 1}</span>
                 <span className="drag-handle">☰</span>
