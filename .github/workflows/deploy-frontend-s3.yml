@@ -16,6 +16,7 @@ concurrency:
 env:
   AWS_REGION: eu-north-1
   S3_BUCKET: exambuddy-front
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
 jobs:
   deploy-frontend:
@@ -76,10 +77,10 @@ jobs:
             --content-type "text/html"
 
       - name: Invalidate CloudFront cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --distribution-id "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" \
             --paths "/*"
 
       - name: Deployment summary
@@ -87,7 +88,7 @@ jobs:
           echo "## Frontend Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "- Bucket: ${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
           echo "- Region: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+          if [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
             echo "- CloudFront invalidation: submitted" >> $GITHUB_STEP_SUMMARY
           else
             echo "- CloudFront invalidation: skipped (no CLOUDFRONT_DISTRIBUTION_ID secret)" >> $GITHUB_STEP_SUMMARY
