@@ -11,12 +11,38 @@ const region = import.meta.env.VITE_COGNITO_REGION || 'eu-north-1';
 const cognitoDomain =
   import.meta.env.VITE_COGNITO_DOMAIN ||
   `exambuddy-auth.auth.${region}.amazoncognito.com`;
-const redirectUri =
-  import.meta.env.VITE_COGNITO_REDIRECT_URI ||
-  `${window.location.origin}/auth-callback`;
-const logoutRedirectUri =
-  import.meta.env.VITE_COGNITO_LOGOUT_URI ||
-  `${window.location.origin}/login`;
+
+const getSafeHostedUri = (configuredUri, fallbackPath) => {
+  const fallbackUri = `${window.location.origin}${fallbackPath}`;
+  if (!configuredUri) {
+    return fallbackUri;
+  }
+
+  try {
+    const configured = new URL(configuredUri);
+    const current = new URL(window.location.origin);
+    const configuredHostIsLocal = configured.hostname === 'localhost' || configured.hostname === '127.0.0.1';
+    const currentHostIsLocal = current.hostname === 'localhost' || current.hostname === '127.0.0.1';
+
+    if (configuredHostIsLocal && !currentHostIsLocal) {
+      return fallbackUri;
+    }
+
+    return configuredUri;
+  } catch {
+    return fallbackUri;
+  }
+};
+
+const redirectUri = getSafeHostedUri(
+  import.meta.env.VITE_COGNITO_REDIRECT_URI,
+  '/auth-callback'
+);
+
+const logoutRedirectUri = getSafeHostedUri(
+  import.meta.env.VITE_COGNITO_LOGOUT_URI,
+  '/login'
+);
 
 /**
  * Redirect to Cognito Hosted UI for login

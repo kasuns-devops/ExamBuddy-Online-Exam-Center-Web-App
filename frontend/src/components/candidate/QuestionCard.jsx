@@ -92,11 +92,25 @@ const QuestionCard = ({
     markIncomplete();
   };
 
+  const handleMoveItem = (index, direction) => {
+    if (disabled) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= orderedItems.length) return;
+
+    const updated = [...orderedItems];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIndex, 0, moved);
+    setOrderedItems(updated);
+    setOrderConfirmed(false);
+    markIncomplete();
+  };
+
   const renderTypeSpecificArea = () => {
     if (type === 'ordering' || type === 'build_list') {
       return (
         <div className="type-box">
-          <p className="type-helper">Drag and drop each row using ☰, then click confirm.</p>
+          <p className="type-helper">Drag rows on desktop, or use ↑/↓ buttons on mobile, then click confirm.</p>
           {orderedItems.length === 0 && (
             <p className="type-empty">No items available for ordering.</p>
           )}
@@ -112,7 +126,27 @@ const QuestionCard = ({
               >
                 <span className="drag-position">{index + 1}</span>
                 <span className="drag-handle">☰</span>
-                <span>{item}</span>
+                <span className="drag-text">{item}</span>
+                <div className="drag-actions">
+                  <button
+                    type="button"
+                    className="drag-move-btn"
+                    onClick={() => handleMoveItem(index, 'up')}
+                    disabled={disabled || index === 0}
+                    aria-label="Move item up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="drag-move-btn"
+                    onClick={() => handleMoveItem(index, 'down')}
+                    disabled={disabled || index === orderedItems.length - 1}
+                    aria-label="Move item down"
+                  >
+                    ↓
+                  </button>
+                </div>
               </div>
             ))}
           </div>

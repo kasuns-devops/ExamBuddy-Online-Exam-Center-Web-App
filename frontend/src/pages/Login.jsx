@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import * as cognitoService from '../services/cognito';
 import './Login.css';
 
 export const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   const handleLoginClick = () => {
     setIsLoading(true);
@@ -22,8 +20,10 @@ export const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
+          <span className="login-badge">Secure Login</span>
           <h1>ExamBuddy</h1>
           <p>Online Exam Center Platform</p>
+          <p className="login-subtitle">Sign in to continue to your exam dashboard</p>
         </div>
 
         {error && (
@@ -33,9 +33,17 @@ export const Login = () => {
         )}
 
         <div className="login-content">
-          <p className="login-description">
-            Sign in with your Cognito credentials to access ExamBuddy
-          </p>
+          <div className="login-info">
+            <p className="login-info-title">Test Credentials</p>
+            <div className="credential-row">
+              <span className="credential-label">Email</span>
+              <span className="credential-value">kasuns@champsoft.com</span>
+            </div>
+            <div className="credential-row">
+              <span className="credential-label">Password</span>
+              <span className="credential-value">Nusak@123</span>
+            </div>
+          </div>
 
           <button
             onClick={handleLoginClick}
@@ -44,14 +52,6 @@ export const Login = () => {
           >
             {isLoading ? 'Redirecting to Cognito...' : 'Sign In with Cognito'}
           </button>
-
-          <div className="login-info">
-            <p>
-              <strong>Test Credentials:</strong>
-            </p>
-            <p>Email: kasuns@champsoft.com</p>
-            <p>Password: Nusak@123</p>
-          </div>
         </div>
 
         <div className="login-footer">

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import useExamStore from '../stores/examStore';
 import useExamTimer from '../hooks/useExamTimer';
+import { useAuth } from '../hooks/useAuth';
 import Timer from '../components/shared/Timer';
 import QuestionCard from '../components/candidate/QuestionCard';
 import ProjectSelection from '../components/candidate/ProjectSelection';
@@ -22,6 +23,8 @@ const ExamPage = () => {
   const [mode, setMode] = useState('test');
   const [difficulty, setDifficulty] = useState('easy');
   const [questionCount, setQuestionCount] = useState(5);
+
+  const logout = useAuth((state) => state.logout);
   
   const {
     sessionId,
@@ -272,10 +275,19 @@ const ExamPage = () => {
     setPhase('selection');
   };
 
+  const handleSignOut = () => {
+    logout();
+  };
+
   if (phase === 'selection') {
     return (
       <div className="exam-page">
         <div className="exam-container">
+          <div className="selection-actions">
+            <button className="signout-button" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          </div>
           <ProjectSelection onSelectProject={handleProjectSelect} />
           {error && <div className="error-message">{error}</div>}
         </div>
@@ -447,6 +459,11 @@ const ExamPage = () => {
       <div className="exam-page">
         <div className="exam-container">
           <div className="results-card">
+            <div className="results-topbar">
+              <button className="signout-button" onClick={handleSignOut}>
+                Sign Out
+              </button>
+            </div>
             <h1>🎉 Exam Complete!</h1>
             
             <div className="score-display">
