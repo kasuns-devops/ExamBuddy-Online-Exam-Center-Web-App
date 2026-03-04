@@ -16,7 +16,7 @@ concurrency:
 env:
   AWS_REGION: eu-north-1
   S3_BUCKET: exambuddy-front
-  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID || 'E3SXCI61UGKFN2' }}
 
 jobs:
   deploy-frontend:
