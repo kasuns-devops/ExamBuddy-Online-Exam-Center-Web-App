@@ -141,25 +141,28 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: linear-gradient(145deg, #ffffff 0%, #f3f4f6 100%);
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   color: #111827;
   min-height: 44px;
   overflow-wrap: anywhere;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 6px 6px 14px rgba(15, 23, 42, 0.12), -4px -4px 12px rgba(255, 255, 255, 0.9);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
 .drag-item.touch-dragging {
   border-color: #2563eb;
-  background: #eff6ff;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), 10px 10px 20px rgba(15, 23, 42, 0.22);
+  transform: translateY(-1px);
 }
 
 .drag-item.touch-target {
   border-color: #16a34a;
-  background: #ecfdf5;
+  background: linear-gradient(145deg, #ecfdf5 0%, #dcfce7 100%);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18), 8px 8px 18px rgba(21, 128, 61, 0.16);
 }
 
 .drag-position {
@@ -199,29 +202,6 @@
 .drag-text {
   flex: 1;
   min-width: 0;
-}
-
-.drag-actions {
-  display: inline-flex;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.drag-move-btn {
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #0f172a;
-  border-radius: 6px;
-  width: 34px;
-  height: 34px;
-  font-weight: 700;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.drag-move-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .match-row {
@@ -484,17 +464,6 @@
     width: 24px;
     height: 24px;
     font-size: 0.75rem;
-  }
-
-  .drag-actions {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .drag-move-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 0.85rem;
   }
 
   .option-letter {
