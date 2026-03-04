@@ -177,8 +177,15 @@
 .drag-handle {
   color: #6b7280;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   cursor: grab;
   touch-action: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   padding: 2px 4px;
   border-radius: 4px;
 }

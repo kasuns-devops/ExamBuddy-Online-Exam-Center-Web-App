@@ -127,6 +127,16 @@ const QuestionCard = ({
     }
   };
 
+  const handleTouchMoveEvent = (event) => {
+    if (touchDragIndex === null) return;
+
+    const touch = event.touches?.[0];
+    if (!touch) return;
+
+    handleTouchMove(touch.clientX, touch.clientY);
+    event.preventDefault();
+  };
+
   const clearTouchState = () => {
     setTouchDragIndex(null);
     setTouchDropIndex(null);
@@ -199,6 +209,7 @@ const QuestionCard = ({
           )}
           <div
             className={`drag-list ${touchDragIndex !== null ? 'touch-active' : ''}`}
+            onTouchMove={handleTouchMoveEvent}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={clearTouchState}
           >
@@ -216,9 +227,13 @@ const QuestionCard = ({
                 <span className="drag-position">{index + 1}</span>
                 <span
                   className="drag-handle"
-                  onTouchStart={() => handleTouchStart(index)}
+                  onTouchStart={(event) => {
+                    event.preventDefault();
+                    handleTouchStart(index);
+                  }}
                   onPointerDown={(event) => {
                     if (event.pointerType !== 'touch') return;
+                    event.preventDefault();
                     handleTouchStart(index, event.pointerId);
                   }}
                 >
