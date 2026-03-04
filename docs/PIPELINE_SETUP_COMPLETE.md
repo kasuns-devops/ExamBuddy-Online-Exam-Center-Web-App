@@ -8,7 +8,7 @@
 - **Cleaned** AWS environment for fresh start
 
 ### Phase 2: Pipeline Infrastructure ✅
-- **Created** GitHub Actions workflow (`.github/workflows/deploy.yml`)
+- **Created** GitHub Actions workflow (`.github/workflows/deploy-backend.yml`)
 - **Updated** SAM configuration (`backend/samconfig.toml`)
 - **Fixed** Docker image (Python 3.11 for Lambda compatibility)
 
@@ -88,7 +88,7 @@
 
 ### ⏳ Your Tasks (Can Do Now)
 - [ ] Read CICD_PIPELINE_SETUP.md
-- [ ] Review workflow file: `.github/workflows/deploy.yml`
+- [ ] Review workflow file: `.github/workflows/deploy-backend.yml`
 - [ ] Prepare GitHub Secrets list
 - [ ] Generate JWT_SECRET: `openssl rand -base64 32`
 - [ ] Get Cognito User Pool ID
@@ -182,7 +182,7 @@ aws apigateway get-rest-apis --query 'items[?contains(name, `ExamBuddy`)]'
 
 ## 📁 Pipeline Files
 
-### `.github/workflows/deploy.yml`
+### `.github/workflows/deploy-backend.yml`
 GitHub Actions workflow that:
 - Runs on push to main & pull requests
 - Tests backend code
@@ -289,7 +289,7 @@ SAM configuration that:
 ExamBuddy/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml              ← GitHub Actions workflow
+│       └── deploy-backend.yml      ← GitHub Actions workflow
 ├── backend/
 │   ├── samconfig.toml              ← SAM configuration (UPDATED)
 │   ├── template.yaml               ← CloudFormation template
@@ -351,7 +351,7 @@ ExamBuddy/
 |----------|---------|
 | [CICD_PIPELINE_SETUP.md](./CICD_PIPELINE_SETUP.md) | Complete reference (80+ sections) |
 | [CICD_PIPELINE_QUICKSTART.md](./CICD_PIPELINE_QUICKSTART.md) | 5-step quick start |
-| [.github/workflows/deploy.yml](./.github/workflows/deploy.yml) | GitHub Actions workflow |
+| [.github/workflows/deploy-backend.yml](./.github/workflows/deploy-backend.yml) | GitHub Actions workflow |
 | [backend/samconfig.toml](./backend/samconfig.toml) | SAM configuration |
 | [backend/template.yaml](./backend/template.yaml) | CloudFormation template |
 

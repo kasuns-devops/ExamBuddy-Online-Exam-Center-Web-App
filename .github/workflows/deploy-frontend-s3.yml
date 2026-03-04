@@ -47,14 +47,27 @@ jobs:
           cat > .env.production.local << EOF
           VITE_APP_VERSION=${{ github.sha }}
           VITE_API_URL=${{ secrets.VITE_API_URL }}
-          VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID }}
-          VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID }}
-          VITE_COGNITO_REGION=${{ secrets.VITE_COGNITO_REGION }}
+          VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID || secrets.COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID || secrets.COGNITO_CLIENT_ID }}
+          VITE_COGNITO_REGION=${{ secrets.VITE_COGNITO_REGION || 'eu-north-1' }}
           VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN }}
           VITE_COGNITO_REDIRECT_URI=${{ secrets.VITE_COGNITO_REDIRECT_URI }}
           VITE_COGNITO_LOGOUT_URI=${{ secrets.VITE_COGNITO_LOGOUT_URI }}
           VITE_ENABLE_ANALYTICS=false
           EOF
+
+      - name: Validate required frontend env
+        working-directory: frontend
+        run: |
+          set -e
+          if ! grep -q '^VITE_COGNITO_CLIENT_ID=.\+' .env.production.local; then
+            echo "Missing required Cognito client id. Set VITE_COGNITO_CLIENT_ID or COGNITO_CLIENT_ID secret."
+            exit 1
+          fi
+          if ! grep -q '^VITE_API_URL=.\+' .env.production.local; then
+            echo "Missing required API URL. Set VITE_API_URL secret."
+            exit 1
+          fi
 
       - name: Install dependencies
         working-directory: frontend

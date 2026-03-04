@@ -8,7 +8,7 @@
 - ✅ Cleaned up deployment artifacts
 
 ### 2. Created CI/CD Pipeline Infrastructure
-- ✅ GitHub Actions workflow file: `.github/workflows/deploy.yml`
+- ✅ GitHub Actions workflow file: `.github/workflows/deploy-backend.yml`
 - ✅ SAM configuration: `backend/samconfig.toml`
 - ✅ Deployment guides and documentation
 
@@ -42,7 +42,7 @@
 ```
 ExamBuddy/
 ├── .github/workflows/
-│   └── deploy.yml                    ← New: GitHub Actions workflow
+│   └── deploy-backend.yml            ← New: GitHub Actions workflow
 ├── backend/
 │   └── samconfig.toml                ← Modified: SAM config
 ├── Dockerfile.deploy                 ← Existing: Updated for Python 3.11
@@ -126,7 +126,7 @@ ExamBuddy/
 
 2. **Commit Pipeline Files to GitHub**
    ```bash
-   git add .github/workflows/deploy.yml backend/samconfig.toml *.md
+  git add .github/workflows/deploy-backend.yml backend/samconfig.toml *.md
    git commit -m "feat: add CI/CD pipeline with GitHub Actions"
    git push origin main
    ```
@@ -409,7 +409,7 @@ NEXT WEEK:
 
 **While waiting for admin approval, you can:**
 
-1. ✅ Review the workflow file: `.github/workflows/deploy.yml`
+1. ✅ Review the workflow file: `.github/workflows/deploy-backend.yml`
 2. ✅ Read CICD_PIPELINE_SETUP.md for architecture details
 3. ✅ Prepare AWS resource creation commands
 4. ✅ Update GitHub Secrets list with your values

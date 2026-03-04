@@ -47,7 +47,7 @@ aws dynamodb create-table \
 ### Step 3: Commit & Push Workflow
 
 ```bash
-git add .github/workflows/deploy.yml backend/samconfig.toml
+git add .github/workflows/deploy-backend.yml backend/samconfig.toml
 git commit -m "feat: add CI/CD pipeline with GitHub Actions"
 git push origin main
 ```
@@ -211,7 +211,7 @@ Admin needs to:
 3. Setup GitHub OIDC provider (optional for better security)
 
 ### For GitHub Actions Issues
-- Check workflow syntax: `.github/workflows/deploy.yml`
+- Check workflow syntax: `.github/workflows/deploy-backend.yml`
 - View logs in GitHub → Actions
 - Test locally with `act` tool
 
@@ -233,7 +233,7 @@ Admin needs to:
 .
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml                 ← GitHub Actions workflow
+│       └── deploy-backend.yml         ← GitHub Actions workflow
 ├── backend/
 │   └── samconfig.toml                 ← SAM configuration
 ├── CICD_PIPELINE_SETUP.md            ← Detailed setup guide

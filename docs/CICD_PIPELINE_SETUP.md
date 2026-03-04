@@ -58,7 +58,7 @@ mkdir -p .github/workflows
 ```
 
 ### 1.2 Create deployment workflow
-**File: `.github/workflows/deploy.yml`**
+**File: `.github/workflows/deploy-backend.yml`**
 
 ```yaml
 name: Deploy ExamBuddy
@@ -348,7 +348,7 @@ aws s3 mb s3://exambuddy-exports-dev-887863153274 --region eu-north-1
 ## Next Steps
 
 1. **Get admin approval** for IAM role and GitHub OIDC provider
-2. **Add GitHub workflow file** to `.github/workflows/deploy.yml`
+2. **Add GitHub workflow file** to `.github/workflows/deploy-backend.yml`
 3. **Configure GitHub secrets**
 4. **Test pipeline** with a pull request
 5. **Monitor first production deployment**
