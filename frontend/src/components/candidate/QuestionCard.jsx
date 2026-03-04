@@ -20,6 +20,7 @@ const QuestionCard = ({
   const [touchDropIndex, setTouchDropIndex] = React.useState(null);
   const [activePointerId, setActivePointerId] = React.useState(null);
   const [activeTouchId, setActiveTouchId] = React.useState(null);
+  const [dragGhost, setDragGhost] = React.useState(null);
   const [orderConfirmed, setOrderConfirmed] = React.useState(false);
   const [blankValue, setBlankValue] = React.useState('');
   const [selectedMatches, setSelectedMatches] = React.useState({});
@@ -108,10 +109,15 @@ const QuestionCard = ({
     setDragIndex(null);
   };
 
-  const handleTouchStart = (index, pointerId = null, touchId = null) => {
+  const handleTouchStart = (index, clientX, clientY, pointerId = null, touchId = null) => {
     if (disabled) return;
     setTouchDragIndex(index);
     setTouchDropIndex(index);
+    setDragGhost({
+      text: String(orderedItems[index] ?? ''),
+      x: clientX,
+      y: clientY,
+    });
     if (pointerId !== null) {
       setActivePointerId(pointerId);
     }
@@ -122,6 +128,12 @@ const QuestionCard = ({
 
   const handleTouchMove = (clientX, clientY) => {
     if (touchDragIndex === null) return;
+
+    setDragGhost((previous) => (
+      previous
+        ? { ...previous, x: clientX, y: clientY }
+        : previous
+    ));
 
     const targetElement = document.elementFromPoint(clientX, clientY);
     const rowElement = targetElement?.closest?.('.drag-item');
@@ -148,6 +160,7 @@ const QuestionCard = ({
     setTouchDropIndex(null);
     setActivePointerId(null);
     setActiveTouchId(null);
+    setDragGhost(null);
   };
 
   const handleTouchEnd = () => {
@@ -229,7 +242,6 @@ const QuestionCard = ({
     if (type === 'ordering' || type === 'build_list') {
       return (
         <div className="type-box">
-          <p className="type-helper">Drag rows on desktop, or use ↑/↓ buttons on mobile, then click confirm.</p>
           {orderedItems.length === 0 && (
             <p className="type-empty">No items available for ordering.</p>
           )}
@@ -255,13 +267,14 @@ const QuestionCard = ({
                   className="drag-handle"
                   onTouchStart={(event) => {
                     event.preventDefault();
+                    const touch = event.changedTouches?.[0];
                     const touchId = event.changedTouches?.[0]?.identifier;
-                    handleTouchStart(index, null, touchId ?? null);
+                    handleTouchStart(index, touch?.clientX ?? 0, touch?.clientY ?? 0, null, touchId ?? null);
                   }}
                   onPointerDown={(event) => {
                     if (event.pointerType !== 'touch') return;
                     event.preventDefault();
-                    handleTouchStart(index, event.pointerId);
+                    handleTouchStart(index, event.clientX, event.clientY, event.pointerId);
                   }}
                 >
                   ☰
@@ -270,6 +283,14 @@ const QuestionCard = ({
               </div>
             ))}
           </div>
+          {dragGhost && (
+            <div
+              className="drag-ghost"
+              style={{ left: dragGhost.x, top: dragGhost.y }}
+            >
+              {dragGhost.text}
+            </div>
+          )}
           <button
             className={`type-action ${orderConfirmed ? 'confirmed' : ''}`}
             disabled={disabled || orderedItems.length === 0}
