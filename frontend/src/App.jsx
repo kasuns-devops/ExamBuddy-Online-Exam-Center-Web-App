@@ -47,6 +47,7 @@ function AppRoutes() {
 
 function App() {
   const initializeAuth = useAuth((state) => state.initializeAuth);
+  const buildVersion = import.meta.env.VITE_APP_VERSION || 'dev-local';
 
   useEffect(() => {
     // Initialize auth from localStorage on app mount
@@ -54,9 +55,14 @@ function App() {
   }, [initializeAuth]);
 
   return (
-    <Router>
-      <AppRoutes />
-    </Router>
+    <>
+      <Router>
+        <AppRoutes />
+      </Router>
+      <div className="build-version" title={`Build ${buildVersion}`}>
+        Build {String(buildVersion).slice(0, 8)}
+      </div>
+    </>
   );
 }
 

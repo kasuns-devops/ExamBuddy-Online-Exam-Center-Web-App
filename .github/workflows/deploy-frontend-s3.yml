@@ -45,6 +45,7 @@ jobs:
         working-directory: frontend
         run: |
           cat > .env.production.local << EOF
+          VITE_APP_VERSION=${{ github.sha }}
           VITE_API_URL=${{ secrets.VITE_API_URL }}
           VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID }}
           VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID }}
@@ -88,6 +89,7 @@ jobs:
           echo "## Frontend Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "- Bucket: ${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
           echo "- Region: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build version: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
             echo "- CloudFront invalidation: submitted" >> $GITHUB_STEP_SUMMARY
           else
