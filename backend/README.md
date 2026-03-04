@@ -110,6 +110,15 @@ sam build
 sam deploy --guided
 ```
 
+### GitHub Actions Workflows
+
+- Backend deploy workflow: `.github/workflows/deploy-backend.yml`
+	- Runs backend tests, builds frontend artifact, and deploys backend SAM stack on push to `main`.
+- Infrastructure workflow: `.github/workflows/deploy-infrastructure.yml`
+	- Validates and deploys core AWS resources (Cognito, DynamoDB, S3) using CloudFormation.
+- Frontend workflow: `.github/workflows/deploy-frontend-s3.yml`
+	- Builds React app, uploads to S3, and invalidates CloudFront.
+
 ## Environment Variables
 
 See `.env.example` for required variables:

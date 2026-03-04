@@ -284,7 +284,7 @@
 - [ ] T143 Create CloudFormation/Terraform scripts for S3 buckets, DynamoDB tables, Cognito User Pool in infrastructure/ directory
 - [ ] T144 [P] Create .github/workflows/backend-tests.yml for CI pipeline running pytest on pull requests
 - [ ] T145 [P] Create .github/workflows/frontend-tests.yml for CI pipeline running Jest tests on pull requests
-- [ ] T146 Create .github/workflows/deploy.yml for CD pipeline: backend SAM deploy, frontend S3 sync on merge to main
+- [ ] T146 Create .github/workflows/deploy-backend.yml for CD pipeline: backend SAM deploy, frontend S3 sync on merge to main
 - [ ] T147 Configure API Gateway custom domain with SSL certificate via AWS Certificate Manager
 - [ ] T148 Create CloudFront distribution for frontend S3 bucket with HTTPS and caching configuration
 - [ ] T149 [P] Create CloudWatch alarms for Lambda errors, API Gateway 5xx responses, DynamoDB throttling
