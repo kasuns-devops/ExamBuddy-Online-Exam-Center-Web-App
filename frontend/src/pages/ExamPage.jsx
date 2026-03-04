@@ -12,6 +12,7 @@ import examService from '../services/examService';
 import './ExamPage.css';
 
 const ExamPage = () => {
+  const questionPaneRef = React.useRef(null);
   const [phase, setPhase] = useState('selection'); // selection, config, exam, review, results
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
@@ -60,6 +61,18 @@ const ExamPage = () => {
 
   const shouldPauseTimer = phase === 'exam' && mode === 'test' && answerSubmitted;
   const { timeRemaining } = useExamTimer(handleTimeUp, shouldPauseTimer);
+
+  useEffect(() => {
+    if (phase !== 'exam' || mode !== 'test' || !answerSubmitted) return;
+
+    const scrollTarget = questionPaneRef.current;
+    if (!scrollTarget) return;
+
+    scrollTarget.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, [phase, mode, answerSubmitted, currentQuestionIndex]);
 
   function handleTimeUp() {
     if (isReviewPhase) {
@@ -378,16 +391,18 @@ const ExamPage = () => {
 
         <div className="exam-container">
           {question && (
-            <QuestionCard
-              question={question}
-              selectedAnswer={selectedAnswer}
-              onSelectAnswer={handleAnswerSelect}
-              questionNumber={progress.current}
-              showCorrectAnswer={mode === 'test' && answerSubmitted}
-              correctIndex={lastSubmission?.correct_index ?? null}
-              correctAnswer={lastSubmission?.correct_answer ?? null}
-              disabled={mode === 'test' && answerSubmitted}
-            />
+            <div ref={questionPaneRef} className="question-pane">
+              <QuestionCard
+                question={question}
+                selectedAnswer={selectedAnswer}
+                onSelectAnswer={handleAnswerSelect}
+                questionNumber={progress.current}
+                showCorrectAnswer={mode === 'test' && answerSubmitted}
+                correctIndex={lastSubmission?.correct_index ?? null}
+                correctAnswer={lastSubmission?.correct_answer ?? null}
+                disabled={mode === 'test' && answerSubmitted}
+              />
+            </div>
           )}
 
           {mode === 'test' && answerSubmitted && lastSubmission && (

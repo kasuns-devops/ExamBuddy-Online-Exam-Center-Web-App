@@ -134,6 +134,7 @@
 
 .drag-list.touch-active {
   touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .drag-item {

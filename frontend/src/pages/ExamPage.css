@@ -58,6 +58,7 @@
 .exam-container {
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .selection-actions {
@@ -78,11 +79,31 @@
 
 .exam-container > .project-selection .projects-grid {
   max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.exam-container > .project-selection .loading,
+.exam-container > .project-selection .no-projects {
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .config-container {
   max-width: 680px;
   margin: 0 auto;
+  width: 100%;
+}
+
+.question-pane,
+.results-card,
+.review-card,
+.config-form {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .exam-container h1 {
@@ -157,6 +178,7 @@
 
 .answer-feedback {
   margin-top: 1rem;
+  margin-bottom: 0.75rem;
   padding: 0.9rem 1rem;
   border-radius: 10px;
   font-weight: 700;
@@ -462,6 +484,15 @@
   .selection-actions .signout-button,
   .results-topbar .signout-button {
     width: 100%;
+  }
+
+  .question-pane {
+    scroll-margin-top: 12px;
+  }
+
+  .answer-feedback {
+    margin-top: 0.85rem;
+    margin-bottom: 0.85rem;
   }
 
   .stat-value {

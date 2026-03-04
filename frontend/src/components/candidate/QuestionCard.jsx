@@ -19,9 +19,11 @@ const QuestionCard = ({
   const [touchDragIndex, setTouchDragIndex] = React.useState(null);
   const [touchDropIndex, setTouchDropIndex] = React.useState(null);
   const [activePointerId, setActivePointerId] = React.useState(null);
+  const [activeTouchId, setActiveTouchId] = React.useState(null);
   const [orderConfirmed, setOrderConfirmed] = React.useState(false);
   const [blankValue, setBlankValue] = React.useState('');
   const [selectedMatches, setSelectedMatches] = React.useState({});
+  const [matchesConfirmed, setMatchesConfirmed] = React.useState(false);
   const [selectedHotspot, setSelectedHotspot] = React.useState('');
   const [selectedMulti, setSelectedMulti] = React.useState([]);
 
@@ -52,6 +54,7 @@ const QuestionCard = ({
     setOrderConfirmed(false);
     setBlankValue('');
     setSelectedMatches({});
+    setMatchesConfirmed(false);
     setSelectedHotspot('');
     setSelectedMulti([]);
   }, [question.question_id, type]);
@@ -105,12 +108,15 @@ const QuestionCard = ({
     setDragIndex(null);
   };
 
-  const handleTouchStart = (index, pointerId = null) => {
+  const handleTouchStart = (index, pointerId = null, touchId = null) => {
     if (disabled) return;
     setTouchDragIndex(index);
     setTouchDropIndex(index);
     if (pointerId !== null) {
       setActivePointerId(pointerId);
+    }
+    if (touchId !== null) {
+      setActiveTouchId(touchId);
     }
   };
 
@@ -141,6 +147,7 @@ const QuestionCard = ({
     setTouchDragIndex(null);
     setTouchDropIndex(null);
     setActivePointerId(null);
+    setActiveTouchId(null);
   };
 
   const handleTouchEnd = () => {
@@ -184,6 +191,39 @@ const QuestionCard = ({
       window.removeEventListener('pointercancel', onPointerCancel);
     };
   }, [activePointerId, touchDragIndex, touchDropIndex]);
+
+  React.useEffect(() => {
+    if (activeTouchId === null) return;
+
+    const onTouchMove = (event) => {
+      const activeTouch = Array.from(event.touches || []).find((touch) => touch.identifier === activeTouchId);
+      if (!activeTouch) return;
+      handleTouchMove(activeTouch.clientX, activeTouch.clientY);
+      event.preventDefault();
+    };
+
+    const onTouchEnd = (event) => {
+      const endedTouch = Array.from(event.changedTouches || []).find((touch) => touch.identifier === activeTouchId);
+      if (!endedTouch) return;
+      handleTouchEnd();
+    };
+
+    const onTouchCancel = (event) => {
+      const canceledTouch = Array.from(event.changedTouches || []).find((touch) => touch.identifier === activeTouchId);
+      if (!canceledTouch) return;
+      clearTouchState();
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchCancel);
+
+    return () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
+    };
+  }, [activeTouchId, touchDragIndex, touchDropIndex]);
 
   const handleMoveItem = (index, direction) => {
     if (disabled) return;
@@ -229,7 +269,8 @@ const QuestionCard = ({
                   className="drag-handle"
                   onTouchStart={(event) => {
                     event.preventDefault();
-                    handleTouchStart(index);
+                    const touchId = event.changedTouches?.[0]?.identifier;
+                    handleTouchStart(index, null, touchId ?? null);
                   }}
                   onPointerDown={(event) => {
                     if (event.pointerType !== 'touch') return;
@@ -295,11 +336,8 @@ const QuestionCard = ({
                 onChange={(event) => {
                   const next = { ...selectedMatches, [left]: event.target.value };
                   setSelectedMatches(next);
-                  if (leftItems.every((item) => next[item])) {
-                    onSelectAnswer({ selected_matches: next });
-                  } else {
-                    markIncomplete();
-                  }
+                  setMatchesConfirmed(false);
+                  markIncomplete();
                 }}
               >
                 <option value="">Select match</option>
@@ -310,11 +348,14 @@ const QuestionCard = ({
             </div>
           ))}
           <button
-            className="type-action"
+            className={`type-action ${matchesConfirmed ? 'confirmed' : ''}`}
             disabled={disabled || !allSelected}
-            onClick={() => onSelectAnswer({ selected_matches: selectedMatches })}
+            onClick={() => {
+              onSelectAnswer({ selected_matches: selectedMatches });
+              setMatchesConfirmed(true);
+            }}
           >
-            Confirm Matches
+            {matchesConfirmed ? 'Matches Confirmed' : 'Confirm Matches'}
           </button>
         </div>
       );
@@ -453,7 +494,7 @@ const QuestionCard = ({
       </p>
 
       {renderTypeSpecificArea()}
-      
+
       {(type === 'single_choice' || type === 'scenario') && (
         <div className="answer-options">
           {answerOptions.length === 0 && (
