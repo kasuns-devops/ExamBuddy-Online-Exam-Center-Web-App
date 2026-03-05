@@ -119,9 +119,9 @@ class PDFQuestionExtractor:
             return PDFQuestionExtractor.parse_pdf_text(full_text, project_id)
         
         except ImportError:
-            # Fallback: try pypdf2
+            # Fallback: try pypdf
             try:
-                from PyPDF2 import PdfReader
+                from pypdf import PdfReader
                 
                 reader = PdfReader(file_path)
                 full_text = ""
@@ -132,8 +132,8 @@ class PDFQuestionExtractor:
             
             except ImportError:
                 raise ImportError(
-                    "PDF parsing requires pdfplumber or PyPDF2. "
-                    "Install with: pip install pdfplumber or pip install PyPDF2"
+                    "PDF parsing requires pdfplumber or pypdf. "
+                    "Install with: pip install pdfplumber or pip install pypdf"
                 )
 
 
@@ -172,3 +172,41 @@ class PDFQuestionValidator:
             valid.append(q)
         
         return valid, errors
+
+
+class PDFQuestionNormalizer:
+    """Normalize parsed questions by removing empty/duplicate entries."""
+
+    @staticmethod
+    def normalize_questions(questions: List[Question]) -> Tuple[List[Question], List[str]]:
+        normalized: List[Question] = []
+        warnings: List[str] = []
+        seen_signatures = set()
+
+        for index, question in enumerate(questions, 1):
+            text = (question.text or '').strip()
+            options = [opt.strip() for opt in (question.answer_options or []) if opt and opt.strip()]
+
+            if not text:
+                warnings.append(f"Q{index}: skipped empty question text")
+                continue
+
+            if len(options) < 2:
+                warnings.append(f"Q{index}: skipped due to insufficient options after normalization")
+                continue
+
+            signature = (text.lower(), tuple(opt.lower() for opt in options))
+            if signature in seen_signatures:
+                warnings.append(f"Q{index}: skipped duplicate question")
+                continue
+
+            seen_signatures.add(signature)
+            question.text = text
+            question.answer_options = options
+
+            if question.correct_index >= len(options):
+                question.correct_index = 0
+
+            normalized.append(question)
+
+        return normalized, warnings

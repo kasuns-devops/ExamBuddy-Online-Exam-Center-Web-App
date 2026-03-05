@@ -2,7 +2,7 @@
 Project Model - Represents exam projects created by admins
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Set
 from datetime import datetime
 from enum import Enum
 
@@ -27,6 +27,24 @@ class ProjectIngestionStatus(str, Enum):
     PROCESSING = 'PROCESSING'
     COMPLETED = 'COMPLETED'
     FAILED = 'FAILED'
+
+
+PROJECT_STATUS_TRANSITIONS: Dict[ProjectStatus, Set[ProjectStatus]] = {
+    ProjectStatus.DRAFT: {ProjectStatus.PROCESSING, ProjectStatus.ARCHIVED},
+    ProjectStatus.PROCESSING: {ProjectStatus.PUBLISHED, ProjectStatus.FAILED, ProjectStatus.ARCHIVED},
+    ProjectStatus.FAILED: {ProjectStatus.PROCESSING, ProjectStatus.ARCHIVED},
+    ProjectStatus.PUBLISHED: {ProjectStatus.PROCESSING, ProjectStatus.ARCHIVED},
+    ProjectStatus.ARCHIVED: set(),
+}
+
+
+def map_ingestion_to_project_status(ingestion_status: ProjectIngestionStatus) -> ProjectStatus:
+    """Map document ingestion status to project lifecycle status."""
+    if ingestion_status in (ProjectIngestionStatus.UPLOADED, ProjectIngestionStatus.PROCESSING):
+        return ProjectStatus.PROCESSING
+    if ingestion_status == ProjectIngestionStatus.COMPLETED:
+        return ProjectStatus.PUBLISHED
+    return ProjectStatus.FAILED
 
 
 class Project(BaseModel):
@@ -75,6 +93,13 @@ class Project(BaseModel):
             'updated_at': self.updated_at,
             'question_count': self.question_count
         }
+
+    @staticmethod
+    def can_transition(current_status: ProjectStatus, next_status: ProjectStatus) -> bool:
+        """Validate if status transition is allowed by lifecycle rules."""
+        if current_status == next_status:
+            return True
+        return next_status in PROJECT_STATUS_TRANSITIONS.get(current_status, set())
     
     @classmethod
     def from_dynamodb_item(cls, item: dict) -> 'Project':
@@ -116,3 +141,38 @@ class ProjectResponse(BaseModel):
     created_at: str
     updated_at: str
     question_count: int
+
+
+class ProjectDocument(BaseModel):
+    """Uploaded project PDF document and ingestion status."""
+    document_id: str
+    project_id: str
+    file_name: str
+    s3_key: str
+    content_type: str = Field(default='application/pdf')
+    file_size_bytes: int = Field(default=0, ge=0)
+    ingestion_status: ProjectIngestionStatus = Field(default=ProjectIngestionStatus.UPLOADED)
+    error_message: Optional[str] = None
+    uploaded_by: str
+    uploaded_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    processed_at: Optional[str] = None
+    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+    def to_dynamodb_item(self) -> dict:
+        return {
+            'PK': f'PROJECT#{self.project_id}',
+            'SK': f'DOCUMENT#{self.document_id}',
+            'entity_type': 'project_document',
+            'document_id': self.document_id,
+            'project_id': self.project_id,
+            'file_name': self.file_name,
+            's3_key': self.s3_key,
+            'content_type': self.content_type,
+            'file_size_bytes': self.file_size_bytes,
+            'ingestion_status': self.ingestion_status.value,
+            'error_message': self.error_message,
+            'uploaded_by': self.uploaded_by,
+            'uploaded_at': self.uploaded_at,
+            'processed_at': self.processed_at,
+            'updated_at': self.updated_at,
+        }

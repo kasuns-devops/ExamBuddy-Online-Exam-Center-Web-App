@@ -41,17 +41,17 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement `Project` validation/state transition rules in `backend/src/models/project.py`
-- [ ] T012 [P] [US1] Implement `ProjectDocument` ingestion model and status mapping in `backend/src/models/project.py`
-- [ ] T013 [P] [US1] Implement parser normalization utilities for duplicate/empty question handling in `backend/src/services/pdf_parser.py`
-- [ ] T014 [US1] Implement ingestion pipeline (`upload -> parse -> persist -> publish/fail`) in `backend/src/services/project_ingestion_service.py`
-- [ ] T015 [US1] Implement admin endpoint `POST /v1/admin/projects` in `backend/src/api/projects.py`
-- [ ] T016 [US1] Implement admin endpoint `POST /v1/admin/projects/{projectId}/documents` in `backend/src/api/projects.py`
-- [ ] T017 [US1] Implement admin endpoint `GET /v1/admin/projects/{projectId}/ingestion` in `backend/src/api/projects.py`
-- [ ] T018 [US1] Register project API router and auth requirements in `backend/src/api/__init__.py`
-- [ ] T019 [US1] Create admin upload UI and form validation in `frontend/src/components/admin/ProjectUploadForm.jsx`
-- [ ] T020 [US1] Add admin upload page styling and mobile-safe layout in `frontend/src/components/admin/ProjectUploadForm.css`
-- [ ] T021 [US1] Add admin project ingestion client methods in `frontend/src/services/examService.js`
+- [x] T011 [US1] Implement `Project` validation/state transition rules in `backend/src/models/project.py`
+- [x] T012 [P] [US1] Implement `ProjectDocument` ingestion model and status mapping in `backend/src/models/project.py`
+- [x] T013 [P] [US1] Implement parser normalization utilities for duplicate/empty question handling in `backend/src/services/pdf_parser.py`
+- [x] T014 [US1] Implement ingestion pipeline (`upload -> parse -> persist -> publish/fail`) in `backend/src/services/project_ingestion_service.py`
+- [x] T015 [US1] Implement admin endpoint `POST /v1/admin/projects` in `backend/src/api/projects.py`
+- [x] T016 [US1] Implement admin endpoint `POST /v1/admin/projects/{projectId}/documents` in `backend/src/api/projects.py`
+- [x] T017 [US1] Implement admin endpoint `GET /v1/admin/projects/{projectId}/ingestion` in `backend/src/api/projects.py`
+- [x] T018 [US1] Register project API router and auth requirements in `backend/src/api/__init__.py`
+- [x] T019 [US1] Create admin upload UI and form validation in `frontend/src/components/admin/ProjectUploadForm.jsx`
+- [x] T020 [US1] Add admin upload page styling and mobile-safe layout in `frontend/src/components/admin/ProjectUploadForm.css`
+- [x] T021 [US1] Add admin project ingestion client methods in `frontend/src/services/examService.js`
 
 **Checkpoint**: US1 is independently functional and publish-safe.
 

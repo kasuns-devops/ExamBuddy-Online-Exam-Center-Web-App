@@ -2,6 +2,7 @@
  * Exam Service - API calls for exam operations
  */
 import axios from 'axios';
+import { API_ROUTES } from './api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -179,6 +180,49 @@ const examService = {
       console.error('Failed to record presentation', error.response?.data || error.message);
       // Do not throw -- presentation timestamps are best-effort
       return null;
+    }
+  },
+
+  async createProject(payload) {
+    try {
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: API_ROUTES.ADMIN_PROJECTS,
+        data: payload,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.detail || 'Failed to create project');
+    }
+  },
+
+  async uploadProjectPdf(projectId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: API_ROUTES.ADMIN_PROJECT_DOCUMENTS(projectId),
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.detail || 'Failed to upload project PDF');
+    }
+  },
+
+  async getProjectIngestionStatus(projectId) {
+    try {
+      const response = await requestWithAuthRetry({
+        method: 'GET',
+        url: API_ROUTES.ADMIN_PROJECT_INGESTION(projectId),
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.detail || 'Failed to load ingestion status');
     }
   }
 };

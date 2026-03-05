@@ -23,8 +23,7 @@ except Exception:
 
 
 if FASTAPI_AVAILABLE:
-    from src.api.projects import router as projects_router
-    from src.api.student_sessions import router as student_sessions_router
+    from src.api import register_api_routers
 
     # Initialize FastAPI app
     app = FastAPI(
@@ -72,8 +71,7 @@ if FASTAPI_AVAILABLE:
     register_error_handlers(app)
 
     # Register foundational routers for project ingestion feature
-    app.include_router(projects_router)
-    app.include_router(student_sessions_router)
+    register_api_routers(app)
 
     # Register API routers (to be added in Phase 3)
     # from src.api import auth, projects, questions, exams, results

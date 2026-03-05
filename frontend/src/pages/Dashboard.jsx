@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
+import ProjectUploadForm from '../components/admin/ProjectUploadForm';
 import './Dashboard.css';
 
 export const Dashboard = () => {
@@ -14,6 +15,25 @@ export const Dashboard = () => {
   const [newOptions, setNewOptions] = useState(['', '', '', '']);
   const [newCorrectIndex, setNewCorrectIndex] = useState(0);
   const [createStatus, setCreateStatus] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('cognito_id_token');
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const payloadPart = token.split('.')[1];
+      const padded = payloadPart + '='.repeat((4 - (payloadPart.length % 4)) % 4);
+      const payload = JSON.parse(atob(padded.replace(/-/g, '+').replace(/_/g, '/')));
+      const role = (payload['custom:role'] || payload.role || '').toLowerCase();
+      setIsAdmin(role === 'admin');
+    } catch {
+      setIsAdmin(false);
+    }
+  }, []);
 
   const loadQuestions = async () => {
     try {
@@ -183,6 +203,8 @@ export const Dashboard = () => {
             {createStatus && <p className="create-status">{createStatus}</p>}
           </form>
         </div>
+
+        {isAdmin && <ProjectUploadForm />}
       </div>
 
       <div className="dashboard-footer">

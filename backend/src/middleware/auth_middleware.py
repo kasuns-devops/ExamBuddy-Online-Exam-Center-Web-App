@@ -1,7 +1,7 @@
 """
 Authentication Middleware - Verifies Cognito JWT tokens
 """
-from fastapi import Request, HTTPException, status
+from fastapi import Request, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 import requests
@@ -167,6 +167,3 @@ async def require_candidate(current_user: Dict = Depends(get_current_user)) -> D
         )
     return current_user
 
-
-# Import Depends here to avoid circular import
-from fastapi import Depends

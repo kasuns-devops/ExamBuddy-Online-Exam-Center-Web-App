@@ -45,11 +45,20 @@ async def upload_project_document(
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing file name")
 
-    return await project_ingestion_service.start_document_ingestion(
-        project_id=project_id,
-        filename=file.filename,
-        uploaded_by=current_user["user_id"],
-    )
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    try:
+        return await project_ingestion_service.start_document_ingestion(
+            project_id=project_id,
+            filename=file.filename,
+            uploaded_by=current_user["user_id"],
+            file_bytes=file_bytes,
+            content_type=file.content_type or "application/pdf",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.get("/v1/admin/projects/{project_id}/ingestion")
