@@ -22,12 +22,12 @@
 
 **⚠️ CRITICAL**: No user story work starts until this phase is complete.
 
-- [ ] T005 Create DynamoDB access helpers for project/question/session records in `backend/src/database/dynamodb_client.py`
-- [ ] T006 [P] Create S3 upload/download helpers for project PDFs in `backend/src/database/s3_client.py`
-- [ ] T007 Implement shared RBAC guard utilities for admin/student endpoint protection in `backend/src/middleware/auth.py`
-- [ ] T008 [P] Implement structured audit logging helper for project/session events in `backend/src/services/audit_service.py`
-- [ ] T009 Create project ingestion orchestration service interface in `backend/src/services/project_ingestion_service.py`
-- [ ] T010 Wire new API routers for projects and student sessions in `backend/src/main.py`
+- [x] T005 Create DynamoDB access helpers for project/question/session records in `backend/src/database/dynamodb_client.py`
+- [x] T006 [P] Create S3 upload/download helpers for project PDFs in `backend/src/database/s3_client.py`
+- [x] T007 Implement shared RBAC guard utilities for admin/student endpoint protection in `backend/src/middleware/auth.py`
+- [x] T008 [P] Implement structured audit logging helper for project/session events in `backend/src/services/audit_service.py`
+- [x] T009 Create project ingestion orchestration service interface in `backend/src/services/project_ingestion_service.py`
+- [x] T010 Wire new API routers for projects and student sessions in `backend/src/main.py`
 
 **Checkpoint**: Foundation complete; user stories can proceed.
 

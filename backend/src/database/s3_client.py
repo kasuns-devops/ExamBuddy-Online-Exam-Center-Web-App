@@ -207,6 +207,40 @@ class S3Client:
         except ClientError:
             return False
 
+    def build_project_document_key(self, project_id: str, filename: str) -> str:
+        """Build canonical S3 key for project PDF documents."""
+        safe_filename = filename.replace(' ', '_')
+        timestamp = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+        return f"{settings.pdf_ingestion_documents_prefix}/{project_id}/{timestamp}_{safe_filename}"
+
+    def generate_project_pdf_upload_url(
+        self,
+        project_id: str,
+        filename: str,
+        expiration: int = 300
+    ) -> Dict[str, str]:
+        """Generate presigned POST for project PDF uploads."""
+        key = self.build_project_document_key(project_id, filename)
+        max_file_size_bytes = settings.pdf_ingestion_max_file_size_mb * 1024 * 1024
+        return self.generate_presigned_upload_url(
+            object_key=key,
+            bucket_name=settings.s3_project_documents_bucket,
+            expiration=expiration,
+            max_file_size=max_file_size_bytes
+        )
+
+    def generate_project_pdf_download_url(
+        self,
+        object_key: str,
+        expiration: int = 3600
+    ) -> str:
+        """Generate presigned download URL for stored project PDF documents."""
+        return self.generate_presigned_download_url(
+            object_key=object_key,
+            bucket_name=settings.s3_project_documents_bucket,
+            expiration=expiration
+        )
+
 
 # Global client instance
 s3_client = S3Client()

@@ -23,6 +23,9 @@ except Exception:
 
 
 if FASTAPI_AVAILABLE:
+    from src.api.projects import router as projects_router
+    from src.api.student_sessions import router as student_sessions_router
+
     # Initialize FastAPI app
     app = FastAPI(
         title="ExamBuddy API",
@@ -67,6 +70,10 @@ if FASTAPI_AVAILABLE:
 
     # Register error handlers
     register_error_handlers(app)
+
+    # Register foundational routers for project ingestion feature
+    app.include_router(projects_router)
+    app.include_router(student_sessions_router)
 
     # Register API routers (to be added in Phase 3)
     # from src.api import auth, projects, questions, exams, results

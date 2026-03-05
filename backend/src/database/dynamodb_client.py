@@ -178,6 +178,35 @@ class DynamoDBClient:
             print(f"Error batch writing: {e}")
             raise
 
+    async def create_project(self, project_item: Dict[str, Any]) -> bool:
+        """Create a project metadata record."""
+        return await self.put_item(project_item)
+
+    async def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch project metadata by project id."""
+        return await self.get_item(pk=f'PROJECT#{project_id}', sk='METADATA')
+
+    async def list_projects(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """List projects using GSI2 global projects partition."""
+        return await self.query(
+            key_condition_expression='GSI2PK = :pk',
+            expression_attribute_values={':pk': 'ALL_PROJECTS'},
+            index_name='GSI2',
+            limit=limit
+        )
+
+    async def save_project_document(self, document_item: Dict[str, Any]) -> bool:
+        """Persist uploaded project document metadata/status."""
+        return await self.put_item(document_item)
+
+    async def save_question_items(self, question_items: List[Dict[str, Any]]) -> bool:
+        """Persist multiple project question records in batch."""
+        return await self.batch_write(question_items)
+
+    async def create_student_session(self, session_item: Dict[str, Any]) -> bool:
+        """Create student session record for project-scoped exam/test."""
+        return await self.put_item(session_item)
+
 
 # Global client instance
 dynamodb_client = DynamoDBClient()
