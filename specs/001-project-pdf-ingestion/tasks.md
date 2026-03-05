@@ -9,10 +9,10 @@
 
 **Purpose**: Prepare dependencies and config for project-based PDF ingestion.
 
-- [ ] T001 Add PDF parsing dependencies (`pdfplumber`, `pypdf`) in `backend/requirements.txt`
-- [ ] T002 Add ingestion environment settings (max file size, accepted MIME, bucket/table names) in `backend/src/config.py`
-- [ ] T003 [P] Add project-ingestion constants and status enums in `backend/src/models/project.py`
-- [ ] T004 [P] Add frontend API route constants for project ingestion endpoints in `frontend/src/services/api.js`
+- [x] T001 Add PDF parsing dependencies (`pdfplumber`, `pypdf`) in `backend/requirements.txt`
+- [x] T002 Add ingestion environment settings (max file size, accepted MIME, bucket/table names) in `backend/src/config.py`
+- [x] T003 [P] Add project-ingestion constants and status enums in `backend/src/models/project.py`
+- [x] T004 [P] Add frontend API route constants for project ingestion endpoints in `frontend/src/services/api.js`
 
 ---
 

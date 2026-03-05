@@ -3,6 +3,14 @@
  */
 import axios from 'axios';
 
+export const API_ROUTES = {
+  ADMIN_PROJECTS: '/v1/admin/projects',
+  ADMIN_PROJECT_DOCUMENTS: (projectId) => `/v1/admin/projects/${projectId}/documents`,
+  ADMIN_PROJECT_INGESTION: (projectId) => `/v1/admin/projects/${projectId}/ingestion`,
+  STUDENT_PROJECTS: '/v1/student/projects',
+  STUDENT_SESSIONS: '/v1/student/sessions',
+};
+
 // Base API URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 

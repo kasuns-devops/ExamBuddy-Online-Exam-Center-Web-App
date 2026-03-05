@@ -4,6 +4,29 @@ Project Model - Represents exam projects created by admins
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
+
+
+PROJECT_ENTITY_TYPE = 'project'
+PROJECT_DYNAMODB_PK_PREFIX = 'PROJECT#'
+PROJECT_DYNAMODB_SK_METADATA = 'METADATA'
+
+
+class ProjectStatus(str, Enum):
+    """Lifecycle status of a project question bank"""
+    DRAFT = 'DRAFT'
+    PROCESSING = 'PROCESSING'
+    PUBLISHED = 'PUBLISHED'
+    FAILED = 'FAILED'
+    ARCHIVED = 'ARCHIVED'
+
+
+class ProjectIngestionStatus(str, Enum):
+    """Status of uploaded project document ingestion"""
+    UPLOADED = 'UPLOADED'
+    PROCESSING = 'PROCESSING'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
 
 
 class Project(BaseModel):
@@ -13,6 +36,7 @@ class Project(BaseModel):
     description: Optional[str] = Field(None, max_length=1000, description="Project description")
     admin_id: str = Field(..., description="ID of admin who created the project")
     archived: bool = Field(default=False, description="Archive status")
+    status: ProjectStatus = Field(default=ProjectStatus.DRAFT, description="Project lifecycle status")
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), description="Creation timestamp")
     updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat(), description="Last update timestamp")
     question_count: int = Field(default=0, description="Total number of questions")
@@ -40,12 +64,13 @@ class Project(BaseModel):
             'GSI1SK': f'PROJECT#{self.created_at}',
             'GSI2PK': 'ALL_PROJECTS',  # For global project list
             'GSI2SK': f'PROJECT#{self.created_at}',
-            'entity_type': 'project',
+            'entity_type': PROJECT_ENTITY_TYPE,
             'project_id': self.project_id,
             'name': self.name,
             'description': self.description,
             'admin_id': self.admin_id,
             'archived': self.archived,
+            'status': self.status.value,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'question_count': self.question_count
@@ -60,6 +85,7 @@ class Project(BaseModel):
             description=item.get('description'),
             admin_id=item['admin_id'],
             archived=item.get('archived', False),
+            status=item.get('status', ProjectStatus.DRAFT),
             created_at=item['created_at'],
             updated_at=item['updated_at'],
             question_count=item.get('question_count', 0)
@@ -86,6 +112,7 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     admin_id: str
     archived: bool
+    status: ProjectStatus
     created_at: str
     updated_at: str
     question_count: int

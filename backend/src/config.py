@@ -16,12 +16,19 @@ class Settings(BaseSettings):
     
     # DynamoDB
     dynamodb_table_name: str = os.getenv('DYNAMODB_TABLE_NAME', 'exambuddy-main')
+    projects_table_name: str = os.getenv('PROJECTS_TABLE_NAME', os.getenv('DYNAMODB_TABLE_NAME', 'exambuddy-main'))
     dynamodb_endpoint: Optional[str] = os.getenv('DYNAMODB_ENDPOINT')  # For local testing
     
     # S3 Buckets
     s3_pdfs_bucket: str = os.getenv('S3_PDFS_BUCKET', 'exambuddy-pdfs')
     s3_exports_bucket: str = os.getenv('S3_EXPORTS_BUCKET', 'exambuddy-exports')
+    s3_project_documents_bucket: str = os.getenv('S3_PROJECT_DOCUMENTS_BUCKET', os.getenv('S3_PDFS_BUCKET', 'exambuddy-pdfs'))
     s3_endpoint: Optional[str] = os.getenv('S3_ENDPOINT')  # For local testing
+
+    # Project PDF ingestion
+    pdf_ingestion_max_file_size_mb: int = int(os.getenv('PDF_INGESTION_MAX_FILE_SIZE_MB', '20'))
+    pdf_ingestion_allowed_mime_types: list = os.getenv('PDF_INGESTION_ALLOWED_MIME_TYPES', 'application/pdf').split(',')
+    pdf_ingestion_documents_prefix: str = os.getenv('PDF_INGESTION_DOCUMENTS_PREFIX', 'projects/documents')
     
     # Cognito
     cognito_user_pool_id: str = os.getenv('COGNITO_USER_POOL_ID', '')
