@@ -22,6 +22,7 @@ const ExamPage = () => {
   const [mode, setMode] = useState('test');
   const [difficulty, setDifficulty] = useState('easy');
   const [questionCount, setQuestionCount] = useState(5);
+  const [sessionStartWarning, setSessionStartWarning] = useState('');
 
   const logout = useAuth((state) => state.logout);
   
@@ -119,6 +120,18 @@ const ExamPage = () => {
   };
 
   const handleStartExam = async () => {
+    if (!projectId) {
+      setSessionStartWarning('Please select a project before starting.');
+      return;
+    }
+
+    if ((selectedProject?.questionCount || 0) <= 0) {
+      setSessionStartWarning('This project has no published questions yet.');
+      return;
+    }
+
+    setSessionStartWarning('');
+
     try {
       setLoading(true);
       setError(null);
@@ -128,6 +141,8 @@ const ExamPage = () => {
       if (safeQuestionCount !== questionCount) {
         setQuestionCount(safeQuestionCount);
       }
+
+      await examService.startStudentSession(projectId, mode);
       
       console.log('Starting exam with:', { projectId, mode, difficulty, questionCount: safeQuestionCount });
       
@@ -362,6 +377,7 @@ const ExamPage = () => {
             </div>
 
             {error && <div className="error-message">{error}</div>}
+            {sessionStartWarning && <div className="session-start-warning">{sessionStartWarning}</div>}
 
             <button className="btn-primary" onClick={handleStartExam} disabled={!projectId}>
               Start Exam

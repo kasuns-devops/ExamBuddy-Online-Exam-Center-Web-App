@@ -84,6 +84,23 @@ const examService = {
     }
   },
 
+  async startStudentSession(projectId, mode) {
+    try {
+      const normalizedMode = String(mode || 'test').toUpperCase() === 'EXAM' ? 'EXAM' : 'TEST';
+      const response = await requestWithAuthRetry({
+        method: 'POST',
+        url: API_ROUTES.STUDENT_SESSIONS,
+        data: {
+          project_id: projectId,
+          mode: normalizedMode,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.detail || 'Failed to start student session');
+    }
+  },
+
   /**
    * Submit an answer for a question
    */

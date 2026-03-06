@@ -13,6 +13,63 @@ class QuestionService:
     
     def __init__(self):
         self.db = DynamoDBClient()
+
+    async def get_project_question_bank(
+        self,
+        project_id: str,
+        difficulty: Optional[DifficultyLevel] = None
+    ) -> List[dict]:
+        """Load full question bank for a project, optionally filtered by difficulty."""
+        questions_data = await self.db.query(
+            key_condition_expression='PK = :pk AND begins_with(SK, :sk_prefix)',
+            expression_attribute_values={
+                ':pk': f'PROJECT#{project_id}',
+                ':sk_prefix': 'QUESTION#'
+            }
+        )
+
+        questions_data = [
+            q for q in questions_data
+            if q.get('project_id') == project_id
+        ]
+
+        if difficulty:
+            questions_data = [
+                q for q in questions_data
+                if q.get('difficulty') == difficulty.value
+            ]
+
+        return questions_data
+
+    async def get_project_questions_by_ids(self, project_id: str, question_ids: List[str]) -> List[Question]:
+        """Load only questions belonging to the given project and IDs."""
+        if not question_ids:
+            return []
+
+        question_bank = await self.get_project_question_bank(project_id=project_id)
+        allowed_ids = set(question_ids)
+        filtered = [q for q in question_bank if q.get('question_id') in allowed_ids]
+
+        questions = []
+        for q in filtered:
+            try:
+                questions.append(Question(**q))
+            except Exception:
+                question = Question(
+                    question_id=q['question_id'],
+                    project_id=q['project_id'],
+                    text=q.get('text') or q.get('question_text', ''),
+                    answer_options=q.get('answer_options') or q.get('options', []),
+                    correct_index=q.get('correct_index') or q.get('correct_answer', 0),
+                    difficulty=q.get('difficulty', 'medium'),
+                    time_limit_seconds=q.get('time_limit_seconds', 60),
+                    created_at=q.get('created_at', ''),
+                    source=q.get('source', 'manual'),
+                    tags=q.get('tags')
+                )
+                questions.append(question)
+
+        return questions
     
     async def random_select_questions(
         self,
@@ -36,20 +93,10 @@ class QuestionService:
         """
         # Query all questions for the project from DynamoDB
         # PK: PROJECT#{project_id}, SK: QUESTION#*
-        questions_data = await self.db.query(
-            key_condition_expression='PK = :pk AND begins_with(SK, :sk_prefix)',
-            expression_attribute_values={
-                ':pk': f'PROJECT#{project_id}',
-                ':sk_prefix': 'QUESTION#'
-            }
+        questions_data = await self.get_project_question_bank(
+            project_id=project_id,
+            difficulty=difficulty,
         )
-        
-        # Filter by difficulty if specified
-        if difficulty:
-            questions_data = [
-                q for q in questions_data 
-                if q.get('difficulty') == difficulty.value
-            ]
         
         # Check if enough questions available
         if len(questions_data) < count:

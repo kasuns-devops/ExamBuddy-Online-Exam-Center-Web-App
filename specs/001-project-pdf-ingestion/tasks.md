@@ -84,13 +84,13 @@
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Implement `StudentSession` project-pinning and conflict rules in `backend/src/models/attempt.py`
-- [ ] T029 [P] [US3] Implement session question loading constrained by `project_id` in `backend/src/services/question_service.py`
-- [ ] T030 [US3] Implement session start endpoint `POST /v1/student/sessions` in `backend/src/api/exams.py`
-- [ ] T031 [US3] Enforce project-scoped answer-key evaluation during scoring in `backend/src/services/exam_service.py`
-- [ ] T032 [P] [US3] Add session start API call (`mode=TEST|EXAM`) in `frontend/src/services/examService.js`
-- [ ] T033 [US3] Pass selected project ID into exam start flow in `frontend/src/pages/ExamPage.jsx`
-- [ ] T034 [US3] Add session-start validation and blocking messages in `frontend/src/pages/ExamPage.css`
+- [x] T028 [US3] Implement `StudentSession` project-pinning and conflict rules in `backend/src/models/attempt.py`
+- [x] T029 [P] [US3] Implement session question loading constrained by `project_id` in `backend/src/services/question_service.py`
+- [x] T030 [US3] Implement session start endpoint `POST /v1/student/sessions` in `backend/src/api/exams.py`
+- [x] T031 [US3] Enforce project-scoped answer-key evaluation during scoring in `backend/src/services/exam_service.py`
+- [x] T032 [P] [US3] Add session start API call (`mode=TEST|EXAM`) in `frontend/src/services/examService.js`
+- [x] T033 [US3] Pass selected project ID into exam start flow in `frontend/src/pages/ExamPage.jsx`
+- [x] T034 [US3] Add session-start validation and blocking messages in `frontend/src/pages/ExamPage.css`
 
 **Checkpoint**: US3 independently starts/scopes sessions and scoring by selected project.
 

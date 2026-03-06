@@ -247,6 +247,16 @@
   font-weight: 500;
 }
 
+.session-start-warning {
+  background: #fff4e5;
+  color: #9a3412;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  border-left: 4px solid #ea580c;
+  font-weight: 600;
+}
+
 .results-card {
   background: white;
   padding: 3rem;

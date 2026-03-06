@@ -9,9 +9,10 @@ from src.services.exam_service import ExamService, ExamMode
 from src.services.question_service import QuestionService
 from src.models.question import DifficultyLevel
 from src.middleware.auth_middleware import get_current_user
-from pydantic import BaseModel
+from src.middleware.auth import require_student_user
 
 router = APIRouter(prefix="/api/exams", tags=["exams"])
+student_sessions_router = APIRouter(tags=["student-sessions"])
 
 # Service instances
 exam_service = ExamService()
@@ -73,6 +74,11 @@ class PresentRequest(BaseModel):
     presented_at: Optional[str] = None  # ISO timestamp (optional)
 
 
+class StartStudentSessionRequest(BaseModel):
+    project_id: str = Field(..., min_length=1)
+    mode: str = Field(..., pattern="^(TEST|EXAM)$")
+
+
 @router.post("/start", response_model=StartExamResponse, status_code=status.HTTP_201_CREATED)
 async def start_exam(
     request: StartExamRequest,
@@ -92,13 +98,13 @@ async def start_exam(
             count=request.question_count,
             difficulty=request.difficulty
         )
-        
+
         if not questions:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"No questions found for project {request.project_id}"
             )
-        
+
         # Start exam session
         session = await exam_service.start_exam_session(
             candidate_id=current_user["user_id"],
@@ -107,7 +113,7 @@ async def start_exam(
             questions=questions,
             difficulty=request.difficulty or DifficultyLevel.MEDIUM
         )
-        
+
         # Prepare response (hide correct answers)
         questions_data = [
             {
@@ -118,9 +124,9 @@ async def start_exam(
             }
             for q in questions
         ]
-        
+
         total_time = sum(q.get("time_limit_seconds", 60) if isinstance(q, dict) else q.time_limit_seconds for q in questions)
-        
+
         return StartExamResponse(
             session_id=session.session_id,
             questions=questions_data,
@@ -128,13 +134,67 @@ async def start_exam(
             started_at=session.started_at.isoformat(),
             total_time_seconds=total_time
         )
-    
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start exam: {str(e)}"
+        )
+
+
+@student_sessions_router.post("/v1/student/sessions", status_code=status.HTTP_201_CREATED)
+async def start_student_session(
+    request: StartStudentSessionRequest,
+    current_user: dict = Depends(require_student_user),
+):
+    mode = ExamMode.TEST if request.mode.upper() == 'TEST' else ExamMode.EXAM
+
+    try:
+        if exam_service.has_active_project_session(current_user['user_id'], request.project_id):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Active session already exists for this project"
+            )
+
+        question_bank = await question_service.get_project_question_bank(project_id=request.project_id)
+        question_count = min(len(question_bank), 10)
+        if question_count <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No questions found for project {request.project_id}"
+            )
+
+        questions = await question_service.random_select_questions(
+            project_id=request.project_id,
+            count=question_count,
+            difficulty=None,
+        )
+
+        session = await exam_service.start_exam_session(
+            candidate_id=current_user['user_id'],
+            project_id=request.project_id,
+            mode=mode,
+            questions=questions,
+            difficulty=DifficultyLevel.MEDIUM,
+        )
+
+        return {
+            "session_id": session.session_id,
+            "project_id": request.project_id,
+            "mode": request.mode,
+            "status": "STARTED",
+            "question_ids": [q.question_id for q in session.questions],
+            "started_at": session.started_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start student session: {str(e)}"
         )
 
 

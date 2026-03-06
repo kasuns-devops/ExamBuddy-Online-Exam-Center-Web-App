@@ -76,6 +76,17 @@ class ExamService:
         self.db = DynamoDBClient()
         # In-memory sessions cache (in production, use Redis or DynamoDB)
         self.active_sessions: Dict[str, ExamSession] = {}
+
+    def has_active_project_session(self, candidate_id: str, project_id: str) -> bool:
+        """Return True if candidate has an uncompleted active session for this project."""
+        for session in self.active_sessions.values():
+            if (
+                session.candidate_id == candidate_id
+                and session.project_id == project_id
+                and not session.completed
+            ):
+                return True
+        return False
     
     async def start_exam_session(
         self,
@@ -98,6 +109,13 @@ class ExamService:
             New ExamSession object
         """
         session_id = f"session-{uuid.uuid4()}"
+
+        if self.has_active_project_session(candidate_id, project_id):
+            raise ValueError("Active session already exists for this project")
+
+        if any(getattr(question, 'project_id', None) != project_id for question in questions):
+            raise ValueError("All session questions must belong to selected project")
+
         session = ExamSession(
             session_id=session_id,
             candidate_id=candidate_id,
@@ -259,9 +277,13 @@ class ExamService:
         answered_questions = len(session.answers)
         
         # Count correct answers (only accepted submissions)
+        valid_project_question_ids = {
+            q.question_id for q in session.questions
+            if getattr(q, 'project_id', None) == session.project_id
+        }
         correct_count = sum(
-            1 for ans in session.answers.values()
-            if ans.get('is_correct') and ans.get('accepted')
+            1 for question_id, ans in session.answers.items()
+            if question_id in valid_project_question_ids and ans.get('is_correct') and ans.get('accepted')
         )
         
         # Calculate score percentage
@@ -270,6 +292,8 @@ class ExamService:
         # Build detailed answer breakdown
         answers_detail = []
         for question in session.questions:
+            if getattr(question, 'project_id', None) != session.project_id:
+                continue
             answer_data = session.answers.get(question.question_id, {})
             answers_detail.append({
                 'question_id': question.question_id,

@@ -29,6 +29,14 @@ class AttemptStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class SessionStatus(str, Enum):
+    """Student session status values."""
+    STARTED = "STARTED"
+    SUBMITTED = "SUBMITTED"
+    ABANDONED = "ABANDONED"
+    EXPIRED = "EXPIRED"
+
+
 class AnswerRecord(BaseModel):
     """Individual answer record"""
     question_id: str
@@ -117,6 +125,31 @@ class Attempt(BaseModel):
             total_time_seconds=item.get('total_time_seconds'),
             answers=[AnswerRecord(**a) for a in item.get('answers', [])]
         )
+
+
+class StudentSession(BaseModel):
+    """Pinned student session for a selected project."""
+    session_id: str
+    student_id: str
+    project_id: str
+    mode: str
+    status: SessionStatus = Field(default=SessionStatus.STARTED)
+    question_ids: List[str] = Field(default_factory=list)
+    started_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    submitted_at: Optional[str] = None
+    score: Optional[float] = None
+
+    @staticmethod
+    def has_conflict(active_sessions: List["StudentSession"], student_id: str, project_id: str) -> bool:
+        """Detect whether a student already has an active session for the same project."""
+        for session in active_sessions:
+            if (
+                session.student_id == student_id
+                and session.project_id == project_id
+                and session.status == SessionStatus.STARTED
+            ):
+                return True
+        return False
 
 
 class AttemptCreate(BaseModel):
