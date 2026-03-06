@@ -43,6 +43,21 @@
   margin-bottom: 0.5rem;
 }
 
+.retry-btn {
+  margin-top: 0.8rem;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  opacity: 0.92;
+}
+
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));

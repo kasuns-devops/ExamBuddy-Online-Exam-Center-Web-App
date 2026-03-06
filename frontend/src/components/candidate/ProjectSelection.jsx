@@ -2,32 +2,30 @@
  * Project Selection Component - List available projects/exams
  */
 import React, { useState, useEffect } from 'react';
+import examService from '../../services/examService';
 import './ProjectSelection.css';
 
 const ProjectSelection = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadProjects();
   }, []);
 
   const loadProjects = async () => {
-    // TODO: Replace with actual API call when admin creates projects
-    // For now, use mock data
-    setTimeout(() => {
-      setProjects([
-        {
-          id: 'demo-project-id',
-          name: 'ExamBuddy Sample Question Bank',
-          description: 'Mixed sample set (easy/medium/hard, core conceptual + scenario style)',
-          questionCount: 10,
-          difficulty: 'Mixed',
-          topics: ['General Knowledge', 'Programming', 'SQL', 'AWS', 'Security']
-        }
-      ]);
+    setLoading(true);
+    setError('');
+    try {
+      const items = await examService.listAvailableProjects();
+      setProjects(items);
+    } catch (err) {
+      setProjects([]);
+      setError(err.message || 'Failed to load exams.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   if (loading) {
@@ -43,8 +41,17 @@ const ProjectSelection = ({ onSelectProject }) => {
       <div className="project-selection">
         <div className="no-projects">
           <h2>📋 No Exams Available</h2>
-          <p>There are currently no exams available to take.</p>
-          <p>Please contact your administrator to create exams.</p>
+          {error ? (
+            <>
+              <p>{error}</p>
+              <button className="retry-btn" onClick={loadProjects}>Retry</button>
+            </>
+          ) : (
+            <>
+              <p>There are currently no exams available to take.</p>
+              <p>Please contact your administrator to create exams.</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -70,14 +77,7 @@ const ProjectSelection = ({ onSelectProject }) => {
             <p className="project-description">{project.description}</p>
             
             <div className="project-meta">
-              <span className="difficulty">
-                📊 Difficulty: {project.difficulty}
-              </span>
-              <div className="topics">
-                {project.topics.map((topic, idx) => (
-                  <span key={idx} className="topic-tag">{topic}</span>
-                ))}
-              </div>
+              <span className="difficulty">📊 Ready for test or exam mode</span>
             </div>
             
             <button className="start-btn">

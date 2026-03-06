@@ -19,8 +19,6 @@ const ExamPage = () => {
   const [lastSubmission, setLastSubmission] = useState(null);
   
   // Project and config state
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [projectId, setProjectId] = useState('');
   const [mode, setMode] = useState('test');
   const [difficulty, setDifficulty] = useState('easy');
   const [questionCount, setQuestionCount] = useState(5);
@@ -29,10 +27,13 @@ const ExamPage = () => {
   
   const {
     sessionId,
+    projectId,
+    selectedProject,
     currentQuestionIndex,
     getCurrentQuestion,
     getProgress,
     setSession,
+    setSelectedProjectContext,
     recordAnswer,
     nextQuestion,
     setResults,
@@ -113,8 +114,7 @@ const ExamPage = () => {
   };
 
   const handleProjectSelect = (project) => {
-    setSelectedProject(project);
-    setProjectId(project.id);
+    setSelectedProjectContext(project);
     setPhase('config');
   };
 
@@ -274,8 +274,6 @@ const ExamPage = () => {
 
   const handleNewExam = () => {
     resetExam();
-    setSelectedProject(null);
-    setProjectId('');
     setPhase('selection');
     setSelectedAnswer(null);
     setAnswerSubmitted(false);
@@ -283,8 +281,7 @@ const ExamPage = () => {
   };
 
   const handleBackToSelection = () => {
-    setSelectedProject(null);
-    setProjectId('');
+    setSelectedProjectContext(null);
     setPhase('selection');
   };
 

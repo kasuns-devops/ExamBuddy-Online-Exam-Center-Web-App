@@ -8,6 +8,7 @@ const useExamStore = create((set, get) => ({
   // Session data
   sessionId: null,
   projectId: null,
+  selectedProject: null,
   mode: null,
   difficulty: null,
   
@@ -40,6 +41,7 @@ const useExamStore = create((set, get) => ({
     console.log('Setting session with data:', sessionData);
     set({
       sessionId: sessionData.session_id,
+      projectId: sessionData.project_id || get().projectId,
       mode: sessionData.mode,
       questions: sessionData.questions || [],
       totalQuestions: sessionData.questions?.length || 0,
@@ -52,6 +54,11 @@ const useExamStore = create((set, get) => ({
       error: null
     });
   },
+
+  setSelectedProjectContext: (project) => set({
+    selectedProject: project,
+    projectId: project?.projectId || project?.id || null,
+  }),
 
   setCurrentQuestion: (index) => set({
     currentQuestionIndex: index,
@@ -115,6 +122,7 @@ const useExamStore = create((set, get) => ({
   resetExam: () => set({
     sessionId: null,
     projectId: null,
+    selectedProject: null,
     mode: null,
     difficulty: null,
     questions: [],

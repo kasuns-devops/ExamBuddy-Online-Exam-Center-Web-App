@@ -65,12 +65,12 @@
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Implement student visibility filtering (`PUBLISHED` + active + questionCount>0) in `backend/src/services/project_ingestion_service.py`
-- [ ] T023 [US2] Implement endpoint `GET /v1/student/projects` in `backend/src/api/projects.py`
-- [ ] T024 [P] [US2] Add student project-list API client and response mapping in `frontend/src/services/examService.js`
-- [ ] T025 [US2] Update project selection data flow/state handling in `frontend/src/components/candidate/ProjectSelection.jsx`
-- [ ] T026 [US2] Add empty-state and loading/error visuals for project selection in `frontend/src/components/candidate/ProjectSelection.css`
-- [ ] T027 [US2] Persist selected project context for exam start in `frontend/src/stores/examStore.js`
+- [x] T022 [US2] Implement student visibility filtering (`PUBLISHED` + active + questionCount>0) in `backend/src/services/project_ingestion_service.py`
+- [x] T023 [US2] Implement endpoint `GET /v1/student/projects` in `backend/src/api/projects.py`
+- [x] T024 [P] [US2] Add student project-list API client and response mapping in `frontend/src/services/examService.js`
+- [x] T025 [US2] Update project selection data flow/state handling in `frontend/src/components/candidate/ProjectSelection.jsx`
+- [x] T026 [US2] Add empty-state and loading/error visuals for project selection in `frontend/src/components/candidate/ProjectSelection.css`
+- [x] T027 [US2] Persist selected project context for exam start in `frontend/src/stores/examStore.js`
 
 **Checkpoint**: US2 independently lists and selects valid projects only.
 

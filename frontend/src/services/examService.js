@@ -224,6 +224,26 @@ const examService = {
     } catch (error) {
       throw new Error(error.response?.data?.detail || 'Failed to load ingestion status');
     }
+  },
+
+  async listAvailableProjects() {
+    try {
+      const response = await requestWithAuthRetry({
+        method: 'GET',
+        url: API_ROUTES.STUDENT_PROJECTS,
+      });
+
+      const items = response.data?.items || [];
+      return items.map((item) => ({
+        id: item.project_id,
+        projectId: item.project_id,
+        name: item.title || item.name || 'Untitled Project',
+        description: item.description || 'No description available.',
+        questionCount: Number(item.question_count || 0),
+      }));
+    } catch (error) {
+      throw new Error(error.response?.data?.detail || 'Failed to load available projects');
+    }
   }
 };
 

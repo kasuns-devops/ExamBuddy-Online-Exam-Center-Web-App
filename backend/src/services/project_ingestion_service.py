@@ -258,6 +258,7 @@ class ProjectIngestionService:
         return [
             {
                 "project_id": item.get("project_id"),
+                "title": item.get("name"),
                 "name": item.get("name"),
                 "description": item.get("description"),
                 "question_count": item.get("question_count", 0),
@@ -265,6 +266,7 @@ class ProjectIngestionService:
             for item in projects
             if item.get("status") == ProjectStatus.PUBLISHED.value
             and not item.get("archived", False)
+            and item.get("is_active", True)
             and item.get("question_count", 0) > 0
         ]
 
