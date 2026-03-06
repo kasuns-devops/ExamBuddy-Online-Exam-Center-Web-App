@@ -52,3 +52,12 @@
 ## Resolved Clarifications
 - No remaining `NEEDS CLARIFICATION` items from technical context.
 - Existing technology baseline remains unchanged: FastAPI + Lambda/API Gateway + DynamoDB/S3 + React/Vite.
+
+## Manual Validation Findings (Phase 6)
+- Local backend import/start validation succeeded after dependency and middleware import fixes (`mangum`, `python-jose`, `python-multipart`).
+- Frontend production build succeeded after integrating project selection API and session-start wiring.
+- Admin ingestion flow compiles and persists project/question structures with publish/fail status transitions.
+- Student selection flow now uses real API data and supports empty/error/retry UX.
+
+## Known Follow-up
+- Full end-to-end API runtime verification with real AWS Cognito/DynamoDB/S3 data still depends on environment credentials and seeded project data.

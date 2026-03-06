@@ -100,10 +100,10 @@
 
 **Purpose**: Complete documentation, consistency, and end-to-end readiness across all stories.
 
-- [ ] T035 [P] Update API documentation for new project/session endpoints in `docs/`
-- [ ] T036 Add quickstart verification notes/results in `specs/001-project-pdf-ingestion/quickstart.md`
-- [ ] T037 [P] Align OpenAPI contract details with implemented request/response payloads in `specs/001-project-pdf-ingestion/contracts/openapi.yaml`
-- [ ] T038 Run end-to-end manual validation and capture findings in `specs/001-project-pdf-ingestion/research.md`
+- [x] T035 [P] Update API documentation for new project/session endpoints in `docs/`
+- [x] T036 Add quickstart verification notes/results in `specs/001-project-pdf-ingestion/quickstart.md`
+- [x] T037 [P] Align OpenAPI contract details with implemented request/response payloads in `specs/001-project-pdf-ingestion/contracts/openapi.yaml`
+- [x] T038 Run end-to-end manual validation and capture findings in `specs/001-project-pdf-ingestion/research.md`
 
 ---
 

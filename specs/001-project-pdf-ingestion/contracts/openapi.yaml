@@ -195,78 +195,86 @@ components:
   schemas:
     CreateProjectRequest:
       type: object
-      required: [title]
+      required: [name]
       properties:
-        title:
+        name:
           type: string
           minLength: 3
-          maxLength: 120
+          maxLength: 200
         description:
           type: string
           maxLength: 1000
 
     Project:
       type: object
-      required: [projectId, title, status, isActive, createdAt, updatedAt]
+      required: [project_id, name, status, created_at, updated_at, question_count]
       properties:
-        projectId:
+        project_id:
           type: string
-        title:
+        name:
           type: string
         description:
           type: string
           nullable: true
+        admin_id:
+          type: string
+        archived:
+          type: boolean
         status:
           type: string
           enum: [DRAFT, PROCESSING, PUBLISHED, FAILED, ARCHIVED]
-        isActive:
-          type: boolean
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
+        question_count:
+          type: integer
+          minimum: 0
 
     IngestionStatusResponse:
       type: object
-      required: [projectId, status]
+      required: [project_id, status, question_count]
       properties:
-        projectId:
+        project_id:
           type: string
         status:
           type: string
-          enum: [PROCESSING, PUBLISHED, FAILED]
-        questionCount:
+          enum: [DRAFT, PROCESSING, PUBLISHED, FAILED, ARCHIVED]
+        question_count:
           type: integer
           minimum: 0
         error:
           type: string
           nullable: true
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
 
     StudentProject:
       type: object
-      required: [projectId, title]
+      required: [project_id, name, question_count]
       properties:
-        projectId:
+        project_id:
           type: string
         title:
+          type: string
+          nullable: true
+        name:
           type: string
         description:
           type: string
           nullable: true
-        questionCount:
+        question_count:
           type: integer
           minimum: 1
 
     StartSessionRequest:
       type: object
-      required: [projectId, mode]
+      required: [project_id, mode]
       properties:
-        projectId:
+        project_id:
           type: string
         mode:
           type: string
@@ -274,11 +282,11 @@ components:
 
     StudentSession:
       type: object
-      required: [sessionId, projectId, mode, status, questionIds, startedAt]
+      required: [session_id, project_id, mode, status, question_ids, started_at]
       properties:
-        sessionId:
+        session_id:
           type: string
-        projectId:
+        project_id:
           type: string
         mode:
           type: string
@@ -286,11 +294,11 @@ components:
         status:
           type: string
           enum: [STARTED, SUBMITTED, ABANDONED, EXPIRED]
-        questionIds:
+        question_ids:
           type: array
           items:
             type: string
-        startedAt:
+        started_at:
           type: string
           format: date-time
 

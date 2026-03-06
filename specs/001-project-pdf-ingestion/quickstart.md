@@ -38,3 +38,9 @@
 ## Rollback / Recovery
 - If ingestion fails, project remains non-published (`FAILED`) and hidden from student listing.
 - Admin can re-upload a corrected PDF to retry processing.
+
+## Implementation Verification Notes (March 2026)
+- Backend app startup verified with routers loaded (`FASTAPI_AVAILABLE=True`).
+- Frontend build verified after admin upload and student project selection integrations.
+- Student project list now returns only selectable projects (`PUBLISHED`, active, non-archived, `question_count > 0`).
+- Student session start uses `POST /v1/student/sessions` and applies active-session conflict checks.
